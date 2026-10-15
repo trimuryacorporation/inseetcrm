@@ -1,4 +1,5 @@
 import {
+  ensureStaffDepartments,
   prepareDepartment,
   validateDepartment,
   guardDepartmentChange,
@@ -156,6 +157,7 @@ for (const [key, def] of Object.entries(definitions)) {
   }
   const schema = z.object(shape).strict();
   operations.get("/" + key, allow(...def.read), async (req, res) => {
+    if (key === "departments") await ensureStaffDepartments(req.user._id);
     const { q, page, limit } = z
       .object({
         q: z.string().max(100).default(""),
@@ -283,6 +285,14 @@ for (const [key, def] of Object.entries(definitions)) {
     async (req, res) => {
       id.parse(req.params.id);
       await mongoose.connection.transaction(async (session) => {
+        if (
+          key === "teams" &&
+          (await User.exists({ team: req.params.id }).session(session))
+        )
+          throw fail(
+            409,
+            "Reassign employee accounts before archiving this team.",
+          );
         if (key === "departments") {
           const current = await Model.findOne({
             _id: req.params.id,

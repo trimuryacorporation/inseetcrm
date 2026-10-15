@@ -25,6 +25,9 @@ const user = new Schema(
       lowercase: true,
       trim: true,
     },
+    loginId: { type: String, trim: true, lowercase: true },
+    department: String,
+    team: { type: Schema.Types.ObjectId, ref: "Team" },
     phone: { type: String },
     password: { type: String, select: false },
     role: { type: String, enum: roles, default: "Recruiter" },
@@ -37,6 +40,10 @@ const user = new Schema(
     inviteExpires: Date,
   },
   base,
+);
+user.index(
+  { loginId: 1 },
+  { unique: true, partialFilterExpression: { loginId: { $type: "string" } } },
 );
 user.plugin(contactPolicy);
 export const User = mongoose.model("User", user);

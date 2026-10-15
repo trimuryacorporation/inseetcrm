@@ -258,7 +258,8 @@ export default function WorkspaceModule({ module }) {
         )}
         {["teams", "departments"].includes(module) && (
           <>
-            <a href="/people">Teams</a>
+            <a href="/people">Employees</a>
+            <a href="/teams">Teams</a>
             <a href="/departments">Departments</a>
             <a href="/attendance">Attendance</a>
             <a href="/leaves">Leave requests</a>

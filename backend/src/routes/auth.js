@@ -20,7 +20,9 @@ const password = z
 const credentials = z.object({
   email: z
     .string()
-    .email()
+    .trim()
+    .min(1)
+    .max(254)
     .transform((v) => v.toLowerCase()),
   password: z.string().min(1).max(72),
 });
@@ -98,11 +100,12 @@ auth.post("/setup", async (req, res) => {
 });
 auth.post("/login", async (req, res) => {
   const d = credentials.parse(req.body);
-  const user = await User.findOne({ email: d.email, active: true }).select(
-    "+password",
-  );
+  const user = await User.findOne({
+    ...(d.email.includes("@") ? { email: d.email } : { loginId: d.email }),
+    active: true,
+  }).select("+password");
   if (!user?.password || !(await bcrypt.compare(d.password, user.password)))
-    throw fail(401, "Invalid email or password");
+    throw fail(401, "Invalid login ID, email or password");
   res.json(await issue(user, res));
 });
 auth.post("/refresh", origin, async (req, res) => {

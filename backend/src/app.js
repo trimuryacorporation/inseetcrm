@@ -1,3 +1,4 @@
+import { employees } from "./routes/employees.js";
 import { validation } from "./routes/validation.js";
 import { candidateOptions } from "./routes/candidateOptions.js";
 import { clientOptions } from "./routes/clientOptions.js";
@@ -61,6 +62,7 @@ app.get("/api/health", (req, res) =>
   }),
 );
 app.use("/api/auth", auth);
+app.use("/api/employees", employees);
 app.use("/api/validation", validation);
 app.use("/api", recruitment);
 app.use("/api", operations);
@@ -78,11 +80,13 @@ app.use((err, req, res, next) => {
       .json({ message: err.issues.map((v) => v.message).join(". ") });
   if (err.code === 11000)
     return res.status(409).json({
-      message: err.keyPattern?.email
-        ? "Email address is already registered. Archived records remain registered until permanently deleted from MongoDB."
-        : err.keyPattern?.phone
-          ? "Phone number is already registered. Archived records remain registered until permanently deleted from MongoDB."
-          : "This record already exists",
+      message: err.keyPattern?.loginId
+        ? "Login ID is already registered. Deactivated accounts retain their login IDs."
+        : err.keyPattern?.email
+          ? "Email address is already registered. Archived records remain registered until permanently deleted from MongoDB."
+          : err.keyPattern?.phone
+            ? "Phone number is already registered. Archived records remain registered until permanently deleted from MongoDB."
+            : "This record already exists",
     });
   if (err.code?.startsWith("CSV_"))
     return res.status(400).json({ message: "Invalid CSV format" });

@@ -414,7 +414,9 @@ export default function AppLayout() {
                 </span>
                 <div>
                   <strong>{user.name}</strong>
-                  <small>{user.role}</small>
+                  <small title={user.role}>
+                    {user.department || user.role}
+                  </small>
                 </div>
                 <ChevronDown size={15} />
               </button>

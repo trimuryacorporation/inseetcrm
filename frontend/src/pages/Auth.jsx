@@ -24,7 +24,9 @@ export default function Auth() {
     reset = mode === "reset-password" || mode === "accept-invitation";
   const schema = z.object({
     email: !reset
-      ? z.string().email("Enter a valid email")
+      ? setup || forgot
+        ? z.string().trim().email("Enter a valid email")
+        : z.string().trim().min(1, "Enter your login ID or email")
       : z.string().optional(),
     password: forgot
       ? z.string().optional()
@@ -131,10 +133,18 @@ export default function Auth() {
               </>
             )}
             {!reset && (
-              <Field label="Work email" error={errors.email}>
+              <Field
+                label={setup || forgot ? "Work email" : "Login ID or email"}
+                error={errors.email}
+              >
                 <input
-                  placeholder="you@company.com"
-                  autoComplete="email"
+                  type={setup || forgot ? "email" : "text"}
+                  placeholder={
+                    setup || forgot
+                      ? "you@company.com"
+                      : "Login ID or work email"
+                  }
+                  autoComplete={setup || forgot ? "email" : "username"}
                   {...register("email")}
                 />
               </Field>

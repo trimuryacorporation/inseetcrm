@@ -145,6 +145,16 @@ export default function Settings() {
                     <Field label="Email address">
                       <input value={user.email} disabled />
                     </Field>
+                    {user.loginId && (
+                      <Field label="Login ID">
+                        <input value={user.loginId} disabled />
+                      </Field>
+                    )}
+                    {user.department && (
+                      <Field label="Department">
+                        <input value={user.department} disabled />
+                      </Field>
+                    )}
                   </>
                 ) : (
                   <>

@@ -1,5 +1,5 @@
 import { Models } from "../models/operations.js";
-import { Job } from "../models/index.js";
+import { Job, User } from "../models/index.js";
 import { fail } from "../utils/security.js";
 export function departmentName(value) {
   return String(value || "")
@@ -31,6 +31,7 @@ export async function validateDepartment(value, current, session) {
 export async function guardDepartmentChange(current, newName, session) {
   if (newName === current.name) return;
   if (
+    (await User.exists({ department: current.name }).session(session)) ||
     (await Models.teams
       .exists({ department: current.name, deletedAt: null })
       .session(session)) ||
@@ -40,6 +41,39 @@ export async function guardDepartmentChange(current, newName, session) {
   )
     throw fail(
       409,
-      "This department is assigned to a team or job. Reassign those records before renaming or archiving it.",
+      "This department is assigned to an employee, team or job. Reassign those records before renaming or archiving it.",
     );
+}
+
+export async function ensureStaffDepartments(owner) {
+  if (!owner) return;
+  const names = [
+    "HR",
+    "Recruitment",
+    "BDE",
+    "Management",
+    "Sales",
+    "Finance",
+    "Accounts",
+    "Operations",
+    "IT",
+    "Administration",
+  ];
+  await Models.departments.bulkWrite(
+    names.map((name) => ({
+      updateOne: {
+        filter: { nameKey: name.toLowerCase() },
+        update: {
+          $setOnInsert: {
+            name,
+            nameKey: name.toLowerCase(),
+            owner,
+            description: "Standard department",
+            deletedAt: null,
+          },
+        },
+        upsert: true,
+      },
+    })),
+  );
 }

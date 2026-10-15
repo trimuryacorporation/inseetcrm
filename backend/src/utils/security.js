@@ -19,6 +19,9 @@ export const safeUser = (u) => ({
   name: u.name,
   email: u.email,
   role: u.role,
+  loginId: u.loginId,
+  department: u.department,
+  team: u.team,
 });
 export const fail = (status, message) =>
   Object.assign(new Error(message), { status });

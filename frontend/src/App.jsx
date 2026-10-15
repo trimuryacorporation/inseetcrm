@@ -4,6 +4,7 @@ import { Layers, ArrowLeft, ShieldCheck } from "lucide-react";
 import { useAuth } from "./store/auth";
 import { restore } from "./services/api";
 import AppLayout, { navigation } from "./layouts/AppLayout";
+const Employees = lazy(() => import("./pages/Employees"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Records = lazy(() => import("./pages/Records"));
@@ -132,9 +133,10 @@ export default function App() {
             element={<WorkspaceModule key="departments" module="departments" />}
           />
           <Route
-            path="people"
+            path="teams"
             element={<WorkspaceModule key="teams" module="teams" />}
           />
+          <Route path="people" element={<Employees />} />
           <Route
             path="tasks"
             element={<WorkspaceModule key="tasks" module="tasks" />}

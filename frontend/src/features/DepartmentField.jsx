@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useAuth } from "../store/auth";
 import { api, message } from "../services/api";
-export default function DepartmentField({ register, watch, setValue }) {
+export default function DepartmentField({
+  register,
+  watch,
+  setValue,
+  required = false,
+}) {
   const id = useId(),
     value = watch("department") || "",
     role = useAuth((s) => s.user?.role),
@@ -62,7 +67,7 @@ export default function DepartmentField({ register, watch, setValue }) {
   return (
     <div className="field">
       <div className="client-field-heading">
-        <label htmlFor={id}>Department</label>
+        <label htmlFor={id}>Department{required ? " *" : ""}</label>
         {canAdd && (
           <button
             type="button"
@@ -83,6 +88,7 @@ export default function DepartmentField({ register, watch, setValue }) {
       />
       <select
         id={id}
+        required={required}
         {...register("department")}
         value={value}
         onFocus={() => setRefresh((i) => i + 1)}
