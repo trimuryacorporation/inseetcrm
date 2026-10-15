@@ -114,7 +114,7 @@ export const definitions = {
       f("phone", "Phone"),
       f("city", "City"),
       f("gstin", "GSTIN"),
-      f("commissionBasisPoints", "Commission (basis points)", "number"),
+      f("commissionBasisPoints", "Commission (%)", "number"),
       f("status", "Status", "select", true, ["Active", "Inactive"]),
       f("notes", "Notes", "textarea"),
     ],
@@ -137,7 +137,9 @@ export const definitions = {
         "Dropout",
         "Replacement",
       ]),
-      f("feePaise", "Placement fee (paise)", "number"),
+      f("joiningSalaryPaise", "Joining salary (INR)", "number", true),
+      f("salaryPeriod", "Salary period", "select", true, ["Monthly", "Annual"]),
+      f("feePaise", "Placement fee (INR)", "number"),
       f("notes", "Notes", "textarea"),
     ],
   },
@@ -270,6 +272,19 @@ for (const [key, def] of Object.entries(definitions)) {
       default: "Pending",
     };
     fields.approvedBy = { type: Schema.Types.ObjectId, ref: "User" };
+  }
+  if (key === "placements") {
+    fields.candidate = { type: Schema.Types.ObjectId, ref: "Candidate" };
+    fields.client = { type: Schema.Types.ObjectId, ref: "Client" };
+    fields.job = { type: Schema.Types.ObjectId, ref: "Job" };
+    fields.joiningSalaryPaise.validate = Number.isSafeInteger;
+    fields.joiningSalaryPaise.max = 1000000000000;
+    fields.feePaise.validate = Number.isSafeInteger;
+    fields.feePaise.max = 1000000000000;
+  }
+  if (key === "vendors") {
+    fields.commissionBasisPoints.max = 10000;
+    fields.commissionBasisPoints.validate = Number.isInteger;
   }
   const schema = new Schema(fields, { timestamps: true });
   schema.plugin(contactPolicy);

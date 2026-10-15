@@ -3,7 +3,14 @@ import { Plus, X } from "lucide-react";
 import { api, message } from "../services/api";
 import { Field } from "../components/ui";
 
-function Suggestions({ field, label, value, setValue, multiple = false }) {
+export function Suggestions({
+  field,
+  label,
+  value,
+  setValue,
+  multiple = false,
+  endpoint,
+}) {
   const id = useId();
   const [query, setQuery] = useState(""),
     [items, setItems] = useState([]),
@@ -22,7 +29,8 @@ function Suggestions({ field, label, value, setValue, multiple = false }) {
       setBusy(true);
       try {
         const { data } = await api.get(
-          "/candidate-options/" + (multiple ? "skills" : "locations"),
+          endpoint ||
+            "/candidate-options/" + (multiple ? "skills" : "locations"),
           { params: { q: search.trim() }, signal: controller.signal },
         );
         if (!controller.signal.aborted) {
@@ -39,7 +47,7 @@ function Suggestions({ field, label, value, setValue, multiple = false }) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [search, multiple]);
+  }, [search, multiple, endpoint]);
   const selected = Array.isArray(value) ? value : [];
   function choose(name) {
     if (multiple) {
@@ -99,7 +107,7 @@ function Suggestions({ field, label, value, setValue, multiple = false }) {
         maxLength={80}
         autoComplete="off"
         placeholder={
-          multiple ? "Search and select skills?" : "Start typing a city?"
+          multiple ? "Search and select skills..." : "Start typing a city..."
         }
         aria-expanded={open}
         aria-controls={id + "-results"}
@@ -122,7 +130,7 @@ function Suggestions({ field, label, value, setValue, multiple = false }) {
       />
       {open && search.trim().length >= 2 && (
         <div id={id + "-results"} className="candidate-suggestions">
-          {busy && <small role="status">Searching?</small>}
+          {busy && <small role="status">Searching...</small>}
           {items
             .filter((i) => !multiple || !selected.includes(i.name))
             .map((i) => (
@@ -151,7 +159,7 @@ function Suggestions({ field, label, value, setValue, multiple = false }) {
               (s) => s.name.toLowerCase() === query.trim().toLowerCase(),
             ) && (
               <button type="button" onClick={addSkill}>
-                <Plus size={13} /> Add ?{query.trim()}?
+                <Plus size={13} /> Add {query.trim()}
               </button>
             )}
           {!multiple && provider === "google" && items.length > 0 && (
@@ -173,7 +181,7 @@ function Suggestions({ field, label, value, setValue, multiple = false }) {
           ? "Select multiple skills from your workspace catalog."
           : provider === "google"
             ? "Google Places suggestions"
-            : "Indian city suggestions ? Google Places requires configuration"}
+            : "Indian city suggestions - Google Places requires configuration"}
       </small>
     </div>
   );
@@ -249,7 +257,7 @@ function AddOption({ kind, label, items, value, register, setValue, onAdded }) {
               disabled={busy || name.trim().length < 2}
               onClick={create}
             >
-              {busy ? "Saving?" : "Save option"}
+              {busy ? "Saving..." : "Save option"}
             </button>
             <button
               type="button"
@@ -323,8 +331,8 @@ export default function CandidateFields({ register, watch, setValue }) {
         <input maxLength={500} {...register("experience")} />
       </Field>
       {[
-        ["currentSalary", "Current salary (?)", 12],
-        ["expectedSalary", "Expected salary (?)", 12],
+        ["currentSalary", "Current salary (INR)", 12],
+        ["expectedSalary", "Expected salary (INR)", 12],
         ["noticePeriod", "Notice period (days)", 4],
       ].map(([key, label, max]) => (
         <Field key={key} label={label}>

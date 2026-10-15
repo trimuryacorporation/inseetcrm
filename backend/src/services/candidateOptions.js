@@ -115,4 +115,3 @@ export async function ensureCandidateOptions() {
     ),
   );
 }
-export const literalRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

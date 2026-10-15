@@ -206,19 +206,33 @@ dataRoutes.get("/data/:resource/export", async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(10000)
     .lean();
+  const placementMoney = (k) =>
+    resource === "placements" && ["joiningSalaryPaise", "feePaise"].includes(k);
+  const exportHeader = (k) =>
+    placementMoney(k)
+      ? k.replace("Paise", "INR")
+      : k === "commissionBasisPoints"
+        ? "commissionPercent"
+        : k;
   const book = new ExcelJS.Workbook(),
     sheet = book.addWorksheet("INSEET");
-  sheet.columns = fields.map((k) => ({ header: k, key: k, width: 25 }));
+  sheet.columns = fields.map((k) => ({
+    header: exportHeader(k),
+    key: k,
+    width: 25,
+  }));
   for (const row of rows)
     sheet.addRow(
       Object.fromEntries(
         fields.map((k) => [
           k,
-          Array.isArray(row[k])
-            ? row[k].join(", ")
-            : row[k] instanceof Date
-              ? row[k].toISOString().slice(0, 10)
-              : (row[k] ?? ""),
+          (k === "commissionBasisPoints" || placementMoney(k)) && row[k] != null
+            ? row[k] / 100
+            : Array.isArray(row[k])
+              ? row[k].join(", ")
+              : row[k] instanceof Date
+                ? row[k].toISOString().slice(0, 10)
+                : (row[k] ?? ""),
         ]),
       ),
     );
@@ -244,11 +258,18 @@ dataRoutes.get("/data/:resource/export", async (req, res) => {
     res.send(
       "\ufeff" +
         [
-          fields.join(","),
+          fields.map(exportHeader).join(","),
           ...rows.map((row) =>
             fields
               .map((k) =>
-                cell(Array.isArray(row[k]) ? row[k].join(", ") : row[k]),
+                cell(
+                  (k === "commissionBasisPoints" || placementMoney(k)) &&
+                    row[k] != null
+                    ? row[k] / 100
+                    : Array.isArray(row[k])
+                      ? row[k].join(", ")
+                      : row[k],
+                ),
               )
               .join(","),
           ),

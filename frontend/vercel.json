@@ -1,1 +1,13 @@
-{"rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "cd .. && npm ci --workspace frontend --include-workspace-root --include=dev --include=optional",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist"
+}

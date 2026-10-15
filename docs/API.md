@@ -97,3 +97,18 @@ Roles are enforced in middleware and queries, not based on a role sent by a brow
 ## Global contact uniqueness
 
 Contact-bearing modules enforce unique email and phone registrations both within each module and across the CRM. Archived/inactive records retain their registrations until physically deleted from MongoDB. Duplicate creates and edits return 409; candidate imports report those rows as Duplicate. Emails are normalized to lowercase and phone formats are canonicalized, with India (+91) as the default for 10-digit local numbers. See CONTACT-POLICY.md for migration and operator details.
+
+
+## Candidate form options and search
+
+Recruitment roles can use GET /candidate-options, POST /candidate-options with {kind: source|qualification|skill, name}, GET /candidate-options/skills?q= and GET /candidate-options/locations?q=. Options persist in MongoDB; case-insensitive duplicates return 409. Location responses identify provider as local or google. Set backend GOOGLE_PLACES_API_KEY to enable Google Places (New); no live key is configured or tested yet. Skills use the workspace catalog. Salary fields accept digit strings up to 12 characters; noticePeriod accepts digit strings up to 4 characters, in days. See CANDIDATE-FIELDS.md.
+
+
+## Shared GSTIN and city fields
+
+Staff-only POST /validation/gstin {gstin} checks GSTIN format and checksum; it does not verify official registration. Staff-only GET /validation/locations?q= supplies the same city search used in candidate forms. Vendors and invoices reject invalid non-empty GSTIN on save; blank GSTIN is optional. Vendor commission UI and exports use percentage (0-100, up to two decimals); REST commissionBasisPoints remains an integer (0-10000) for compatibility and precise storage. For example, 2.50% maps to 250 basis points.
+
+
+## Placement links and joining amounts
+
+GET /placements/options?kind=candidates|clients|jobs&q=&client= returns up to 25 authorized, non-archived records. Jobs require a client ID and are filtered to that company. Recruiters see their candidates and assigned jobs; related client names are available for those jobs. New placements require candidate, client and job IDs, joiningSalaryPaise (integer), salaryPeriod (Monthly|Annual), joiningDate and status. Canonical names are read from MongoDB and saved as historical snapshots. Invalid or unauthorized links and mismatched job/client selections are rejected. Existing legacy records are retained; relink them through the form to use current selections. Placement amounts display and export in INR, while the REST API and MongoDB retain integer paise for precision.

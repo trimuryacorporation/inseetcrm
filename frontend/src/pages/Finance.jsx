@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from "react";
+import GstinField from "../features/GstinField";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Plus,
@@ -33,6 +34,8 @@ export default function Finance() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { isSubmitting },
   } = useForm();
   async function load() {
@@ -241,9 +244,12 @@ export default function Finance() {
                 <Field label="Client company">
                   <input required {...register("companyName")} />
                 </Field>
-                <Field label="Client GSTIN">
-                  <input maxLength={30} {...register("gstin")} />
-                </Field>
+                <GstinField
+                  label="Client GSTIN"
+                  register={register}
+                  watch={watch}
+                  setValue={setValue}
+                />
                 <Field label="Description of services">
                   <textarea required rows={3} {...register("description")} />
                 </Field>

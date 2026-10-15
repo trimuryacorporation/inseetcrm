@@ -1,3 +1,8 @@
+import PlacementFields from "../features/PlacementFields";
+import { rupeesToPaise, isPlacementMoney } from "../utils/money";
+import GstinField from "../features/GstinField";
+import { Suggestions } from "../features/CandidateFields";
+import { percentToBasisPoints } from "../utils/percentage";
 import DataTools from "../components/DataTools";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -36,7 +41,9 @@ export default function WorkspaceModule({ module }) {
     register,
     handleSubmit,
     reset,
-    formState: { isSubmitting },
+    watch,
+    setValue,
+    formState: { isSubmitting, errors },
   } = useForm();
   async function load() {
     setError("");
@@ -60,13 +67,30 @@ export default function WorkspaceModule({ module }) {
   useEffect(() => {
     if (editing && definition)
       reset(
-        Object.fromEntries(
-          definition.fields.map((f) => [
-            f.key,
-            f.type === "date"
-              ? editing[f.key]?.slice(0, 10) || ""
-              : (editing[f.key] ?? (f.options?.[0] || "")),
-          ]),
+        Object.assign(
+          Object.fromEntries(
+            definition.fields.map((f) => [
+              f.key,
+              module === "placements" && isPlacementMoney(f.key)
+                ? editing[f.key] == null
+                  ? ""
+                  : (editing[f.key] / 100).toFixed(2)
+                : f.key === "commissionBasisPoints"
+                  ? editing[f.key] == null
+                    ? ""
+                    : (editing[f.key] / 100).toFixed(2)
+                  : f.type === "date"
+                    ? editing[f.key]?.slice(0, 10) || ""
+                    : (editing[f.key] ?? (f.options?.[0] || "")),
+            ]),
+          ),
+          module === "placements"
+            ? {
+                candidate: editing.candidate || "",
+                client: editing.client || "",
+                job: editing.job || "",
+              }
+            : {},
         ),
       );
   }, [editing]);
@@ -74,19 +98,39 @@ export default function WorkspaceModule({ module }) {
     try {
       const body = Object.fromEntries(
         definition.fields
-          .filter((f) => f.required || values[f.key] !== "")
+          .filter(
+            (f) =>
+              f.key === "gstin" ||
+              f.key === "commissionBasisPoints" ||
+              f.required ||
+              values[f.key] !== "",
+          )
           .map((f) => [
             f.key,
-            f.type === "number" ? Number(values[f.key]) : values[f.key],
+            module === "placements" && isPlacementMoney(f.key)
+              ? rupeesToPaise(values[f.key])
+              : f.key === "commissionBasisPoints"
+                ? values[f.key] === ""
+                  ? 0
+                  : percentToBasisPoints(values[f.key])
+                : f.type === "number"
+                  ? Number(values[f.key])
+                  : values[f.key],
           ]),
       );
+      if (module === "placements")
+        Object.assign(body, {
+          candidate: values.candidate,
+          client: values.client,
+          job: values.job,
+        });
       if (editing._id) await api.patch("/" + module + "/" + editing._id, body);
       else await api.post("/" + module, body);
       toast.success("Record saved");
       setEditing(null);
       load();
     } catch (e) {
-      toast.error(message(e));
+      toast.error(e.response ? message(e) : e.message);
     }
   }
   async function remove() {
@@ -132,8 +176,28 @@ export default function WorkspaceModule({ module }) {
           [
             "\ufeff" +
               [
-                keys.join(","),
-                ...rows.map((r) => keys.map((k) => cell(r[k])).join(",")),
+                keys
+                  .map((k) =>
+                    module === "placements" && isPlacementMoney(k)
+                      ? k.replace("Paise", "INR")
+                      : k === "commissionBasisPoints"
+                        ? "commissionPercent"
+                        : k,
+                  )
+                  .join(","),
+                ...rows.map((r) =>
+                  keys
+                    .map((k) =>
+                      cell(
+                        (k === "commissionBasisPoints" ||
+                          (module === "placements" && isPlacementMoney(k))) &&
+                          r[k] != null
+                          ? (r[k] / 100).toFixed(2)
+                          : r[k],
+                      ),
+                    )
+                    .join(","),
+                ),
               ].join("\r\n"),
           ],
           { type: "text/csv" },
@@ -152,7 +216,7 @@ export default function WorkspaceModule({ module }) {
   if (!definition || !data) return <LoadingSkeleton />;
   const shown = definition.fields
     .filter((f) => f.type !== "textarea")
-    .slice(0, 6);
+    .slice(0, module === "placements" ? 8 : module === "vendors" ? 7 : 6);
   return (
     <>
       <div className="page-heading">
@@ -231,7 +295,23 @@ export default function WorkspaceModule({ module }) {
                     <tr key={row._id}>
                       {shown.map((f, i) => (
                         <td key={f.key}>
-                          {f.type === "date" ? (
+                          {module === "placements" &&
+                          isPlacementMoney(f.key) ? (
+                            row[f.key] == null ? (
+                              "-"
+                            ) : (
+                              new Intl.NumberFormat("en-IN", {
+                                style: "currency",
+                                currency: "INR",
+                              }).format(row[f.key] / 100)
+                            )
+                          ) : f.key === "commissionBasisPoints" ? (
+                            row[f.key] == null ? (
+                              "-"
+                            ) : (
+                              (row[f.key] / 100).toFixed(2) + "%"
+                            )
+                          ) : f.type === "date" ? (
                             row[f.key]?.slice(0, 10) || "—"
                           ) : f.type === "select" ? (
                             <StatusBadge>{row[f.key]}</StatusBadge>
@@ -329,32 +409,79 @@ export default function WorkspaceModule({ module }) {
         >
           <form onSubmit={handleSubmit(save)}>
             <div className="form-grid">
-              {definition.fields.map((f) => (
-                <Field label={f.label + (f.required ? " *" : "")} key={f.key}>
-                  {f.options ? (
-                    <select required={f.required} {...register(f.key)}>
-                      {f.options.map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                  ) : f.type === "textarea" ? (
-                    <textarea
-                      rows={4}
-                      required={f.required}
-                      maxLength={10000}
-                      {...register(f.key)}
+              {module === "placements" && (
+                <PlacementFields
+                  register={register}
+                  watch={watch}
+                  setValue={setValue}
+                  errors={errors}
+                />
+              )}
+              {definition.fields
+                .filter(
+                  (f) =>
+                    module !== "placements" ||
+                    !["candidateName", "companyName", "jobTitle"].includes(
+                      f.key,
+                    ),
+                )
+                .map((f) =>
+                  f.key === "gstin" ? (
+                    <GstinField
+                      key={f.key}
+                      register={register}
+                      watch={watch}
+                      setValue={setValue}
+                    />
+                  ) : f.key === "city" ? (
+                    <Suggestions
+                      key={f.key}
+                      field="city"
+                      label="City"
+                      value={watch("city")}
+                      setValue={setValue}
+                      endpoint="/validation/locations"
                     />
                   ) : (
-                    <input
-                      required={f.required}
-                      type={f.type}
-                      min={f.type === "number" ? 0 : undefined}
-                      step={f.type === "number" ? 1 : undefined}
-                      {...register(f.key)}
-                    />
-                  )}
-                </Field>
-              ))}
+                    <Field
+                      label={f.label + (f.required ? " *" : "")}
+                      key={f.key}
+                    >
+                      {f.options ? (
+                        <select required={f.required} {...register(f.key)}>
+                          {f.options.map((s) => (
+                            <option key={s}>{s}</option>
+                          ))}
+                        </select>
+                      ) : f.type === "textarea" ? (
+                        <textarea
+                          rows={4}
+                          required={f.required}
+                          maxLength={10000}
+                          {...register(f.key)}
+                        />
+                      ) : (
+                        <input
+                          required={f.required}
+                          type={f.type}
+                          min={f.type === "number" ? 0 : undefined}
+                          max={
+                            f.key === "commissionBasisPoints" ? 100 : undefined
+                          }
+                          step={
+                            f.key === "commissionBasisPoints" ||
+                            (module === "placements" && isPlacementMoney(f.key))
+                              ? 0.01
+                              : f.type === "number"
+                                ? 1
+                                : undefined
+                          }
+                          {...register(f.key)}
+                        />
+                      )}
+                    </Field>
+                  ),
+                )}
             </div>
             <div className="modal-actions">
               <button

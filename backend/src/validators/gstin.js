@@ -34,3 +34,13 @@ export function validateGstin(input) {
         : "GSTIN format and checksum are valid. Registration status has not been verified with GST authorities.",
   };
 }
+
+export function normalizeGstin(value) {
+  const result = validateGstin(value);
+  if (result.gstin && !result.valid) {
+    const error = new Error(result.message);
+    error.status = 400;
+    throw error;
+  }
+  return result.gstin;
+}

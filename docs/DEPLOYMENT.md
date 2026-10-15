@@ -30,12 +30,12 @@ Official references: [Express on Render](https://render.com/docs/deploy-node-exp
 
 Import the repository, choose Vite, and set the project root to `frontend`. Use the root workspace lockfile by enabling access to files outside the selected root if Vercel requires it for the monorepo.
 
-- Install command from the `frontend` directory: `cd .. && npm ci --workspace frontend --include-workspace-root`
+- Install command from the `frontend` directory: `cd .. && npm ci --workspace frontend --include-workspace-root --include=dev --include=optional`
 - Build command: `npm run build`
 - Output directory: `dist`
 - Public environment variable: `VITE_API_URL=https://YOUR-RENDER-SERVICE.onrender.com/api`
 
-`frontend/vercel.json` supplies SPA route rewrites. Set Render's `FRONTEND_URL` to the exact deployed frontend origin, then redeploy the backend. Rebuild the frontend after changing `VITE_API_URL` because Vite embeds it at build time.
+`frontend/vercel.json` supplies the install/build/output settings and SPA route rewrites. Set Render's `FRONTEND_URL` to the exact deployed frontend origin, then redeploy the backend. Rebuild the frontend after changing `VITE_API_URL` because Vite embeds it at build time.
 
 For reliable production refresh cookies, use frontend/backend subdomains of one domain such as `app.example.com` and `api.example.com`. The app uses Secure, HTTP-only, SameSite=None cookies in production; unrelated vercel.app/onrender.com domains may be affected by browser third-party cookie restrictions. CORS allows only the configured frontend origin. WebSocket CORS uses that same origin.
 
@@ -60,3 +60,19 @@ After configuring real services, run the automated suite and production build, t
 From the `backend` directory, both `node server.js` and `npm.cmd start` start the backend. From the repository root, use `npm.cmd start --workspace backend` or `node backend/server.js`. The compatibility entry point imports `src/server.js`; environment configuration loads `backend/.env` using its absolute module-relative path.
 
 If Atlas SRV resolution fails with `querySrv ECONNREFUSED`, the optional backend-only `MONGODB_DNS_SERVERS=1.1.1.1,8.8.8.8` setting can select working DNS resolvers for Node. It does not modify Windows DNS settings. Leave this blank where system DNS already works or use DNS servers approved for your network.
+
+
+## Vercel native binding build error
+
+If Vite/Rolldown reports Cannot find native binding on Linux after development on Windows, check that the committed root package-lock.json includes @rolldown/binding-linux-x64-gnu, @tailwindcss/oxide-linux-x64-gnu and the correct lightningcss-linux-x64-gnu versions. A lockfile regenerated while an existing Windows node_modules tree is present can omit the Linux optional packages. Merely adding --include=optional cannot restore metadata absent from the lockfile.
+
+Commit the repaired root lockfile and frontend/vercel.json together. In Vercel set Root Directory to frontend, enable access to files outside the root for the shared workspace lockfile if needed, and use the commands above. Redeploy the new commit with the existing build cache disabled. Do not remove the lockfile or install latest dependency versions during each deployment. The npm cache-dir warning in the supplied log is separate from the missing native binding error.
+
+References: https://github.com/rolldown/rolldown/blob/main/docs/guide/troubleshooting.md and https://vercel.com/docs/project-configuration/vercel-json
+
+
+## Render root URL and Endpoint not found
+
+The Render service hosts the Express API; the CRM login UI is hosted on Vercel. GET / and GET /api return public API information and the configured frontend URL. GET /api/health is the database readiness endpoint; it returns 503 if MongoDB is disconnected. Unknown routes still return 404.
+
+For this Render service configure Vercel VITE_API_URL=https://inseetcrm.onrender.com/api, then redeploy the frontend. A bare origin is normalized to include /api by the Axios client. Set Render FRONTEND_URL to the exact Vercel frontend origin for CORS and authentication callbacks, then redeploy the backend. Push these code changes before redeploying: changing environment variables alone does not install a missing root route.

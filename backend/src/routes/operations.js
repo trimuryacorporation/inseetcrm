@@ -1,3 +1,8 @@
+import {
+  placementClientScope,
+  resolvePlacementLinks,
+} from "../services/placementLinks.js";
+import { normalizeGstin } from "../validators/gstin.js";
 import { identityCreate, identityUpdate } from "../services/contactIdentity.js";
 import { Router } from "express";
 import mongoose from "mongoose";
@@ -10,9 +15,9 @@ import {
   Invoice,
   Payment,
 } from "../models/operations.js";
-import { User, AuditLog } from "../models/index.js";
+import { User, AuditLog, Client, Job } from "../models/index.js";
 import { Candidate, Application, Interview } from "../models/recruitment.js";
-import { authenticate, allow, scope } from "../middleware/auth.js";
+import { authenticate, allow, scope, jobScope } from "../middleware/auth.js";
 import { fail } from "../utils/security.js";
 export const operations = Router();
 const managed = [
@@ -53,6 +58,67 @@ operations.get("/workspace/modules", (req, res) =>
     ),
   ),
 );
+operations.get(
+  "/placements/options",
+  allow(...definitions.placements.read),
+  async (req, res) => {
+    const { kind, q, client } = z
+      .object({
+        kind: z.enum(["candidates", "clients", "jobs"]),
+        q: z.string().trim().max(100).default(""),
+        client: id.optional(),
+      })
+      .parse(req.query);
+    const Model =
+      kind === "candidates" ? Candidate : kind === "clients" ? Client : Job;
+    const filter = {
+      deletedAt: null,
+      ...(kind === "candidates"
+        ? scope(req.user)
+        : kind === "clients"
+          ? await placementClientScope(req.user)
+          : jobScope(req.user)),
+    };
+    if (kind === "jobs") {
+      if (!client) return res.json({ items: [] });
+      filter.client = client;
+    }
+    const field =
+      kind === "candidates"
+        ? "fullName"
+        : kind === "clients"
+          ? "companyName"
+          : "title";
+    if (q) filter[field] = { $regex: escape(q), $options: "i" };
+    const records = await Model.find(filter)
+      .select(
+        field +
+          " " +
+          (kind === "jobs"
+            ? "location client"
+            : kind === "candidates"
+              ? "currentCity"
+              : "city"),
+      )
+      .sort({ [field]: 1, _id: 1 })
+      .limit(25)
+      .lean();
+    res.json({
+      items: records.map((r) => ({
+        _id: r._id,
+        name: r[field],
+        detail:
+          kind === "jobs"
+            ? r.location
+            : kind === "candidates"
+              ? r.currentCity
+              : r.city,
+        client: r.client,
+      })),
+    });
+  },
+);
+
 for (const [key, def] of Object.entries(definitions)) {
   const Model = Models[key],
     shape = {};
@@ -72,7 +138,16 @@ for (const [key, def] of Object.entries(definitions)) {
     if (f.required && ["text", "textarea", "email"].includes(f.type))
       v = v.refine((s) => s.length > 0, "This field is required");
     if (!f.required) v = v.optional();
+    if (f.key === "gstin") v = z.string().transform(normalizeGstin).optional();
+    if (f.key === "commissionBasisPoints")
+      v = z.number().int().min(0).max(10000).optional();
     shape[f.key] = v;
+  }
+  if (key === "placements") {
+    for (const ref of ["candidate", "client", "job"])
+      shape[ref] = id.optional();
+    for (const name of ["candidateName", "companyName", "jobTitle"])
+      shape[name] = z.string().trim().max(500).optional();
   }
   const schema = z.object(shape).strict();
   operations.get("/" + key, allow(...def.read), async (req, res) => {
@@ -101,10 +176,12 @@ for (const [key, def] of Object.entries(definitions)) {
     res.json({ items, total, page, pages: Math.ceil(total / limit) });
   });
   operations.post("/" + key, allow(...def.write), async (req, res) => {
-    const data = schema.parse(req.body);
+    let data = schema.parse(req.body);
     if (key === "leaves" && data.endDate < data.startDate)
       throw fail(400, "End date must be on or after start date");
     const result = await mongoose.connection.transaction(async (session) => {
+      if (key === "placements")
+        data = await resolvePlacementLinks(data, req.user, session);
       const [item] = await identityCreate(
         Model,
         [{ ...data, owner: req.user._id }],
@@ -132,7 +209,7 @@ for (const [key, def] of Object.entries(definitions)) {
     allow(...def.write),
     async (req, res) => {
       id.parse(req.params.id);
-      const data = schema.partial().parse(req.body);
+      let data = schema.partial().parse(req.body);
       const item = await mongoose.connection.transaction(async (session) => {
         const current = await Model.findOne({
           _id: req.params.id,
@@ -152,6 +229,8 @@ for (const [key, def] of Object.entries(definitions)) {
           )
             throw fail(400, "End date must be on or after start date");
         }
+        if (key === "placements")
+          data = await resolvePlacementLinks(data, req.user, session, current);
         const updated = await identityUpdate(
           Model,
           { _id: current._id },
@@ -309,7 +388,7 @@ operations.post("/invoices", allow(...finance), async (req, res) => {
   const data = z
     .object({
       companyName: z.string().min(2).max(200),
-      gstin: z.string().max(30).optional(),
+      gstin: z.string().transform(normalizeGstin).optional(),
       description: z.string().min(2).max(3000),
       subtotalPaise: money,
       gstBasisPoints: z.number().int().min(0).max(10000),

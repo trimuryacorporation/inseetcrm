@@ -176,14 +176,11 @@ test("client masters, dependent cities, payment models and GSTIN validation", as
     async () => {
       assert.equal(
         (
-          await request(app)
-            .post("/api/clients")
-            .set(headers)
-            .send({
-              companyName: "Wrong city",
-              state: "Maharashtra",
-              city: "Kolkata",
-            })
+          await request(app).post("/api/clients").set(headers).send({
+            companyName: "Wrong city",
+            state: "Maharashtra",
+            city: "Kolkata",
+          })
         ).status,
         400,
       );
@@ -232,26 +229,20 @@ test("client masters, dependent cities, payment models and GSTIN validation", as
       assert.equal(created.body.placementFee, null);
       assert.equal(
         (
-          await request(app)
-            .post("/api/clients")
-            .set(headers)
-            .send({
-              companyName: "Missing Fixed Fee",
-              paymentTerms: fixed.name,
-            })
+          await request(app).post("/api/clients").set(headers).send({
+            companyName: "Missing Fixed Fee",
+            paymentTerms: fixed.name,
+          })
         ).status,
         400,
       );
       assert.equal(
         (
-          await request(app)
-            .post("/api/clients")
-            .set(headers)
-            .send({
-              companyName: "Fractional paise",
-              paymentTerms: fixed.name,
-              fixedFeePaise: 123.45,
-            })
+          await request(app).post("/api/clients").set(headers).send({
+            companyName: "Fractional paise",
+            paymentTerms: fixed.name,
+            fixedFeePaise: 123.45,
+          })
         ).status,
         400,
       );
@@ -287,5 +278,120 @@ test("client masters, dependent cities, payment models and GSTIN validation", as
         403,
       );
     },
+  );
+});
+
+test("shared GST validation, vendor percentage and city search", async () => {
+  const { percentToBasisPoints } =
+    await import("../../frontend/src/utils/percentage.js");
+  assert.equal(percentToBasisPoints("2.50"), 250);
+  assert.equal(percentToBasisPoints("0.29"), 29);
+  assert.equal(percentToBasisPoints("100"), 10000);
+  for (const invalid of ["-1", "100.01", "2.555", "1e2", "abc"])
+    assert.throws(() => percentToBasisPoints(invalid));
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/validation/gstin")
+        .send({ gstin: "27AAPFU0939F1ZV" })
+    ).status,
+    401,
+  );
+  const gst = await request(app)
+    .post("/api/validation/gstin")
+    .set(headers)
+    .send({ gstin: "27AAPFU0939F1ZV" });
+  assert.equal(gst.status, 200);
+  assert.equal(gst.body.valid, true);
+  assert.equal(gst.body.registrationVerified, false);
+  const city = await request(app)
+    .get("/api/validation/locations?q=Pune")
+    .set(headers);
+  assert.equal(city.status, 200);
+  assert.ok(city.body.items.some((i) => i.name.startsWith("Pune,")));
+  const body = {
+    companyName: "Percentage Agency",
+    contactPerson: "Vendor Contact",
+    email: "vendor-percent@example.test",
+    city: "Pune",
+    gstin: "27aapfu0939f1zv",
+    commissionBasisPoints: percentToBasisPoints("2.50"),
+    status: "Active",
+  };
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/vendors")
+        .set(headers)
+        .send({ ...body, gstin: "INVALID" })
+    ).status,
+    400,
+  );
+  const created = await request(app)
+    .post("/api/vendors")
+    .set(headers)
+    .send(body);
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  assert.equal(created.body.gstin, "27AAPFU0939F1ZV");
+  assert.equal(created.body.commissionBasisPoints, 250);
+  for (const invalid of [10001, -1, 2.5])
+    assert.equal(
+      (
+        await request(app)
+          .patch("/api/vendors/" + created.body._id)
+          .set(headers)
+          .send({ commissionBasisPoints: invalid })
+      ).status,
+      400,
+    );
+  assert.equal(
+    (
+      await request(app)
+        .patch("/api/vendors/" + created.body._id)
+        .set(headers)
+        .send({ gstin: "27AAPFU0939F1ZA" })
+    ).status,
+    400,
+  );
+  const edited = await request(app)
+    .patch("/api/vendors/" + created.body._id)
+    .set(headers)
+    .send({ commissionBasisPoints: percentToBasisPoints("3.25"), gstin: "" });
+  assert.equal(edited.status, 200);
+  assert.equal(edited.body.commissionBasisPoints, 325);
+  assert.equal(edited.body.gstin, "");
+  const exported = await request(app)
+    .get("/api/data/vendors/export?format=csv")
+    .set(headers);
+  assert.equal(exported.status, 200);
+  assert.match(exported.text, /commissionPercent/);
+  assert.match(exported.text, /3.25/);
+  const invoice = {
+    companyName: "GST Client",
+    description: "Recruitment fee",
+    subtotalPaise: 10000,
+    gstBasisPoints: 1800,
+    dueAt: "2026-12-31",
+    gstin: "INVALID",
+  };
+  assert.equal(
+    (await request(app).post("/api/invoices").set(headers).send(invoice))
+      .status,
+    400,
+  );
+  const financeUser = await User.create({
+    name: "Finance GST",
+    email: "finance-gst@example.test",
+    role: "Finance Manager",
+  });
+  const financeHeaders = { Authorization: "Bearer " + access(financeUser) };
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/validation/gstin")
+        .set(financeHeaders)
+        .send({ gstin: body.gstin })
+    ).status,
+    200,
   );
 });

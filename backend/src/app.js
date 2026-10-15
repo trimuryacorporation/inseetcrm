@@ -1,3 +1,4 @@
+import { validation } from "./routes/validation.js";
 import { candidateOptions } from "./routes/candidateOptions.js";
 import { clientOptions } from "./routes/clientOptions.js";
 import express from "express";
@@ -42,6 +43,16 @@ app.use(
     legacyHeaders: false,
   }),
 );
+app.get(["/", "/api"], (req, res) =>
+  res.json({
+    service: "inseet-api",
+    message:
+      "INSEET backend API is running. Open the frontend URL to use the CRM.",
+    frontend: env.FRONTEND_URL,
+    health: "/api/health",
+    api: "/api",
+  }),
+);
 app.get("/api/health", (req, res) =>
   res.status(mongoose.connection.readyState === 1 ? 200 : 503).json({
     service: "inseet-api",
@@ -50,6 +61,7 @@ app.get("/api/health", (req, res) =>
   }),
 );
 app.use("/api/auth", auth);
+app.use("/api/validation", validation);
 app.use("/api", recruitment);
 app.use("/api", operations);
 app.use("/api", advanced);

@@ -1,7 +1,8 @@
+import { resolveApiBaseUrl } from "../utils/apiBaseUrl";
 import axios from "axios";
 import { useAuth } from "../store/auth";
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL: resolveApiBaseUrl(import.meta.env.VITE_API_URL),
   withCredentials: true,
 });
 api.interceptors.request.use((config) => {
