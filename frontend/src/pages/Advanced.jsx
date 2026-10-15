@@ -1,4 +1,5 @@
-﻿import { useEffect, useRef, useState } from "react";
+import Permission from "../components/Permission";
+import { useEffect, useRef, useState } from "react";
 import { Upload, Download, Trash2, FileText, Mail, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import { api, message } from "../services/api";
@@ -81,44 +82,48 @@ export function Documents() {
           </p>
         </div>
       </div>
-      <section className="panel upload-panel">
-        <div>
-          <h2>Upload to your workspace</h2>
-          <p>PDF, DOCX, PNG, JPEG · Up to 10 MB · Private object storage</p>
-        </div>
-        <select
-          aria-label="Document category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          {[
-            "Resume",
-            "Client Agreement",
-            "Vendor Agreement",
-            "Offer Letter",
-            "Joining Document",
-            "Invoice",
-            "Company Document",
-          ].map((c) => (
-            <option key={c}>{c}</option>
-          ))}
-        </select>
-        <input
-          ref={ref}
-          type="file"
-          hidden
-          accept=".pdf,.docx,.png,.jpg,.jpeg"
-          onChange={(e) => upload(e.target.files[0])}
-        />
-        <button
-          className="btn primary"
-          disabled={uploading}
-          onClick={() => ref.current.click()}
-        >
-          <Upload size={16} />
-          {uploading ? "Uploading…" : "Choose file"}
-        </button>
-      </section>
+      <Permission module="documents" action="create">
+        <section className="panel upload-panel">
+          <div>
+            <h2>Upload to your workspace</h2>
+            <p>PDF, DOCX, PNG, JPEG · Up to 10 MB · Private object storage</p>
+          </div>
+          <select
+            aria-label="Document category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {[
+              "Resume",
+              "Client Agreement",
+              "Vendor Agreement",
+              "Offer Letter",
+              "Joining Document",
+              "Invoice",
+              "Company Document",
+            ].map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+          <input
+            ref={ref}
+            type="file"
+            hidden
+            accept=".pdf,.docx,.png,.jpg,.jpeg"
+            onChange={(e) => upload(e.target.files[0])}
+          />
+          <Permission module={"documents"} action="create">
+            <button
+              className="btn primary"
+              disabled={uploading}
+              onClick={() => ref.current.click()}
+            >
+              <Upload size={16} />
+              {uploading ? "Uploading…" : "Choose file"}
+            </button>
+          </Permission>
+        </section>
+      </Permission>
       <section className="panel mt-6">
         {error ? (
           <ErrorState error={error} retry={load} />
@@ -158,13 +163,15 @@ export function Documents() {
                       >
                         <Download size={16} />
                       </button>
-                      <button
-                        className="icon-btn danger"
-                        aria-label={"Delete " + d.name}
-                        onClick={() => setDeleting(d)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <Permission module={"documents"} action="delete">
+                        <button
+                          className="icon-btn danger"
+                          aria-label={"Delete " + d.name}
+                          onClick={() => setDeleting(d)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </Permission>
                     </td>
                   </tr>
                 ))}
@@ -269,10 +276,12 @@ export function Communication() {
             Communication history
           </button>
         </div>
-        <button className="btn primary" onClick={open}>
-          <Send size={16} />
-          Send candidate email
-        </button>
+        <Permission module="communication" action="create">
+          <button className="btn primary" onClick={open}>
+            <Send size={16} />
+            Send candidate email
+          </button>
+        </Permission>
       </div>
       {tab === "templates" ? (
         <WorkspaceModule module="email-templates" />

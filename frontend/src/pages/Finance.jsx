@@ -1,3 +1,4 @@
+import Permission from "../components/Permission";
 import GstinField from "../features/GstinField";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -106,14 +107,18 @@ export default function Finance() {
           <p>Manage invoices, collections, and outstanding balances.</p>
         </div>
         <div className="page-actions">
-          <button className="btn secondary" onClick={() => open("payment")}>
-            <Wallet size={16} />
-            Record payment
-          </button>
-          <button className="btn primary" onClick={() => open("invoice")}>
-            <Plus size={16} />
-            Create invoice
-          </button>
+          <Permission module={"finance"} action="create">
+            <button className="btn secondary" onClick={() => open("payment")}>
+              <Wallet size={16} />
+              Record payment
+            </button>
+          </Permission>
+          <Permission module={"finance"} action="create">
+            <button className="btn primary" onClick={() => open("invoice")}>
+              <Plus size={16} />
+              Create invoice
+            </button>
+          </Permission>
         </div>
       </div>
       <div className="module-subnav">

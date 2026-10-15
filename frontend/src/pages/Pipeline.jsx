@@ -1,4 +1,6 @@
-﻿import { useEffect, useState } from "react";
+import { usePermission } from "../utils/permissions";
+import Permission from "../components/Permission";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Plus,
@@ -19,6 +21,7 @@ import {
   LoadingSkeleton,
 } from "../components/ui";
 export default function Pipeline() {
+  const canEdit = usePermission("applications", "edit");
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
     [creating, setCreating] = useState(false),
@@ -123,10 +126,12 @@ export default function Pipeline() {
               </option>
             ))}
           </select>
-          <button className="btn primary" onClick={createOpen}>
-            <Plus size={16} />
-            Add application
-          </button>
+          <Permission module={"applications"} action="create">
+            <button className="btn primary" onClick={createOpen}>
+              <Plus size={16} />
+              Add application
+            </button>
+          </Permission>
         </div>
       </div>
       {error ? (
@@ -178,7 +183,7 @@ export default function Pipeline() {
                         className={
                           "candidate-card " + (moving === a._id ? "moving" : "")
                         }
-                        draggable={!moving}
+                        draggable={canEdit && !moving}
                         onDragStart={(e) =>
                           e.dataTransfer.setData("text/plain", a._id)
                         }
@@ -210,7 +215,7 @@ export default function Pipeline() {
                         </div>
                         <select
                           aria-label={"Stage for " + a.candidate?.fullName}
-                          disabled={!!moving}
+                          disabled={!canEdit || !!moving}
                           value={a.stage}
                           onChange={(e) => move(a, e.target.value)}
                         >

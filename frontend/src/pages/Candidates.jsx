@@ -1,3 +1,4 @@
+import Permission from "../components/Permission";
 import CandidateFields from "../features/CandidateFields";
 import DataTools from "../components/DataTools";
 import { useEffect, useState } from "react";
@@ -162,10 +163,12 @@ export default function Candidates() {
             <Download size={16} />
             Export CSV
           </button>
-          <button className="btn primary" onClick={() => setEditing({})}>
-            <Plus size={16} />
-            Add candidate
-          </button>
+          <Permission module={"candidates"} action="create">
+            <button className="btn primary" onClick={() => setEditing({})}>
+              <Plus size={16} />
+              Add candidate
+            </button>
+          </Permission>
         </div>
       </div>
       <div className="panel">
@@ -233,20 +236,24 @@ export default function Candidates() {
                         </div>
                       </td>
                       <td>
-                        <button
-                          className="icon-btn"
-                          aria-label={"Edit " + c.fullName}
-                          onClick={() => setEditing(c)}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          className="icon-btn danger"
-                          aria-label={"Archive " + c.fullName}
-                          onClick={() => setDeleting(c)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <Permission module={"candidates"} action="edit">
+                          <button
+                            className="icon-btn"
+                            aria-label={"Edit " + c.fullName}
+                            onClick={() => setEditing(c)}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        </Permission>
+                        <Permission module={"candidates"} action="delete">
+                          <button
+                            className="icon-btn danger"
+                            aria-label={"Archive " + c.fullName}
+                            onClick={() => setDeleting(c)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </Permission>
                       </td>
                     </tr>
                   ))}
@@ -269,10 +276,12 @@ export default function Candidates() {
                 : "Add consented candidate details to build your talent database."
             }
             action={
-              <button className="btn primary" onClick={() => setEditing({})}>
-                <Plus size={16} />
-                Add candidate
-              </button>
+              <Permission module={"candidates"} action="create">
+                <button className="btn primary" onClick={() => setEditing({})}>
+                  <Plus size={16} />
+                  Add candidate
+                </button>
+              </Permission>
             }
           />
         )}

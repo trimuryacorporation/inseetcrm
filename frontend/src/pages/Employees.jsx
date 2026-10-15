@@ -1,7 +1,21 @@
+import Permission from "../components/Permission";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { Plus, Pencil, UserCheck, UserX, Eye, EyeOff } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  UserCheck,
+  UserX,
+  Eye,
+  EyeOff,
+  UserRound,
+  Building2,
+  KeyRound,
+  UserPlus,
+  ArrowRight,
+  LoaderCircle,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { api, message } from "../services/api";
 import { useAuth } from "../store/auth";
@@ -131,10 +145,12 @@ export default function Employees() {
           <p>Create employee logins, assign departments and manage access.</p>
         </div>
         {options.canManage && (
-          <button className="btn primary" onClick={() => setEditing({})}>
-            <Plus size={16} />
-            Add team member
-          </button>
+          <Permission module={"employees"} action="create">
+            <button className="btn primary" onClick={() => setEditing({})}>
+              <Plus size={16} />
+              Add team member
+            </button>
+          </Permission>
         )}
       </div>
       <div className="module-subnav">
@@ -190,28 +206,35 @@ export default function Employees() {
                       <td>
                         {canEdit(row) && (
                           <div className="flex gap-1">
-                            <button
-                              className="icon-btn"
-                              aria-label={"Edit " + row.name}
-                              onClick={() => setEditing(row)}
+                            <Permission module={"employees"} action="edit">
+                              <button
+                                className="icon-btn"
+                                aria-label={"Edit " + row.name}
+                                onClick={() => setEditing(row)}
+                              >
+                                <Pencil size={16} />
+                              </button>
+                            </Permission>
+                            <Permission
+                              module="employees"
+                              action={row.active ? "delete" : "edit"}
                             >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              className="icon-btn"
-                              disabled={busy === row._id}
-                              aria-label={
-                                (row.active ? "Deactivate " : "Activate ") +
-                                row.name
-                              }
-                              onClick={() => toggle(row)}
-                            >
-                              {row.active ? (
-                                <UserX size={16} />
-                              ) : (
-                                <UserCheck size={16} />
-                              )}
-                            </button>
+                              <button
+                                className="icon-btn"
+                                disabled={busy === row._id}
+                                aria-label={
+                                  (row.active ? "Deactivate " : "Activate ") +
+                                  row.name
+                                }
+                                onClick={() => toggle(row)}
+                              >
+                                {row.active ? (
+                                  <UserX size={16} />
+                                ) : (
+                                  <UserCheck size={16} />
+                                )}
+                              </button>
+                            </Permission>
                           </div>
                         )}
                       </td>
@@ -236,108 +259,206 @@ export default function Employees() {
       </section>
       {editing && (
         <FormModal
-          title={editing._id ? "Edit employee" : "Add team member"}
+          className="employee-modal"
+          title={
+            <span className="flex items-center gap-3">
+              <span className="employee-title-icon">
+                <UserPlus size={21} />
+              </span>
+              {editing._id ? "Edit employee" : "Add team member"}
+            </span>
+          }
+          description="Give your teammate a place in your workspace."
           onClose={() => setEditing(null)}
         >
-          <form onSubmit={handleSubmit(save)}>
-            <div className="form-grid">
-              <Field label="Full name *">
-                <input
-                  required
-                  maxLength={100}
-                  autoComplete="name"
-                  {...register("name")}
-                />
-              </Field>
-              <Field label="Work email *">
-                <input
-                  type="email"
-                  required
-                  maxLength={254}
-                  autoComplete="email"
-                  {...register("email")}
-                />
-              </Field>
-              <Field label="Login ID *">
-                <input
-                  required
-                  minLength={3}
-                  maxLength={50}
-                  pattern="[a-zA-Z0-9][a-zA-Z0-9._-]{2,49}"
-                  placeholder="e.g. recruiter.01"
-                  autoComplete="off"
-                  {...register("loginId")}
-                />
-                <small>
-                  Use 3-50 letters, digits, dots, underscores or hyphens.
-                </small>
-              </Field>
-              <Field label="Phone">
-                <input type="tel" maxLength={30} {...register("phone")} />
-              </Field>
-              <DepartmentField
-                register={register}
-                watch={watch}
-                setValue={setValue}
-                required
-              />
-              <Field label="Access role *">
-                <select required {...register("role")}>
-                  {options.roles.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-                <small>Role controls allowed modules and actions.</small>
-              </Field>
-              <Field label="Team">
-                <select {...register("team")}>
-                  <option value="">No team</option>
-                  {options.teams
-                    .filter((t) => !t.department || t.department === department)
-                    .map((t) => (
-                      <option key={t._id} value={t._id}>
-                        {t.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-              <Field
-                label={editing._id ? "New password (optional)" : "Password *"}
+          <form className="employee-form" onSubmit={handleSubmit(save)}>
+            <div className="employee-form-content space-y-6">
+              <section
+                className="employee-section"
+                aria-labelledby="employee-personal-title"
               >
-                <div className="client-gstin-control">
-                  <input
-                    type={visible ? "text" : "password"}
-                    required={!editing._id}
-                    minLength={12}
-                    maxLength={72}
-                    pattern="(?=.*[A-Z])(?=.*[0-9]).{12,72}"
-                    autoComplete="new-password"
-                    {...register("password")}
-                  />
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label={visible ? "Hide password" : "Show password"}
-                    onClick={() => setVisible(!visible)}
-                  >
-                    {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                <div className="employee-section-heading">
+                  <UserRound size={17} />
+                  <div>
+                    <h3 id="employee-personal-title">Personal information</h3>
+                    <p>Start with your teammate's contact details.</p>
+                  </div>
                 </div>
-                <small>
-                  At least 12 characters, one uppercase letter and one number.
-                  {editing._id
-                    ? " Leave blank to retain the existing password."
-                    : ""}
-                </small>
-              </Field>
-              <label className="consent-label">
-                <input type="checkbox" {...register("active")} />
-                <span>Account active - employee can sign in</span>
+                <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+                  <Field label="Full name *">
+                    <input
+                      required
+                      maxLength={100}
+                      placeholder="e.g. Snehalata Das"
+                      autoComplete="name"
+                      {...register("name")}
+                    />
+                  </Field>
+                  <Field label="Work email *">
+                    <input
+                      type="email"
+                      required
+                      maxLength={254}
+                      placeholder="name@company.com"
+                      autoComplete="email"
+                      {...register("email")}
+                    />
+                  </Field>
+                  <Field label="Phone">
+                    <input
+                      type="tel"
+                      maxLength={30}
+                      placeholder="Enter phone number"
+                      autoComplete="tel"
+                      {...register("phone")}
+                    />
+                  </Field>
+                </div>
+              </section>
+              <section
+                className="employee-section"
+                aria-labelledby="employee-workspace-title"
+              >
+                <div className="employee-section-heading">
+                  <Building2 size={17} />
+                  <div>
+                    <h3 id="employee-workspace-title">Workspace & access</h3>
+                    <p>Choose where they belong and what they can access.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+                  <DepartmentField
+                    register={register}
+                    watch={watch}
+                    setValue={setValue}
+                    required
+                  />
+                  <Field label="Access role *">
+                    <select required {...register("role")}>
+                      {options.roles.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                    <small>Controls available modules and actions.</small>
+                  </Field>
+                  <Field label="Team">
+                    <select {...register("team")}>
+                      <option value="">No team assigned</option>
+                      {options.teams
+                        .filter(
+                          (t) => !t.department || t.department === department,
+                        )
+                        .map((t) => (
+                          <option key={t._id} value={t._id}>
+                            {t.name}
+                          </option>
+                        ))}
+                    </select>
+                  </Field>
+                </div>
+              </section>
+              <section
+                className="employee-section"
+                aria-labelledby="employee-signin-title"
+              >
+                <div className="employee-section-heading">
+                  <KeyRound size={17} />
+                  <div>
+                    <h3 id="employee-signin-title">Sign-in details</h3>
+                    <p>
+                      Set the credentials your teammate will use to sign in.
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
+                  <Field label="Login ID *">
+                    <input
+                      required
+                      minLength={3}
+                      maxLength={254}
+                      pattern="[a-zA-Z0-9][a-zA-Z0-9._\x2d]{2,49}|[^\s@]+@[^\s@]+\.[^\s@]+"
+                      placeholder="e.g. snehalata.d"
+                      autoComplete="off"
+                      {...register("loginId")}
+                    />
+                    <small
+                      className={
+                        watch("loginId")?.includes("@") &&
+                        watch("loginId").trim().toLowerCase() !==
+                          (watch("email") || "").trim().toLowerCase()
+                          ? "employee-input-hint-error"
+                          : ""
+                      }
+                    >
+                      {watch("loginId")?.includes("@")
+                        ? "An email-style login ID must match the work email above."
+                        : "Use a short username or the matching work email."}
+                    </small>
+                  </Field>
+                  <Field
+                    label={
+                      editing._id ? "New password (optional)" : "Password *"
+                    }
+                  >
+                    <div className="employee-password">
+                      <input
+                        type={visible ? "text" : "password"}
+                        required={!editing._id}
+                        minLength={8}
+                        maxLength={72}
+                        placeholder={
+                          editing._id
+                            ? "Leave blank to keep password"
+                            : "Enter a strong password"
+                        }
+                        autoComplete="new-password"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        {...register("password")}
+                      />
+                      <button
+                        type="button"
+                        aria-label={visible ? "Hide password" : "Show password"}
+                        aria-pressed={visible}
+                        onClick={() => setVisible(!visible)}
+                      >
+                        {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    </div>
+                    <small>
+                      At least 8 characters. Uppercase, numbers and symbols are
+                      optional.
+                    </small>
+                  </Field>
+                </div>
+              </section>
+              <label className="employee-account-status">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  className="peer sr-only"
+                  {...register("active")}
+                />
+                <span className="employee-status-switch" aria-hidden="true">
+                  <span />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <strong>Account active</strong>
+                  <small>
+                    {watch("active")
+                      ? "Your teammate can sign in once the account is saved."
+                      : "Sign-in stays disabled until you activate this account."}
+                  </small>
+                </span>
+                <span className="employee-status-label">
+                  {watch("active") ? "Active" : "Inactive"}
+                </span>
               </label>
             </div>
-            <div className="modal-actions">
+            <div className="employee-form-footer">
               <button
                 type="button"
                 className="btn secondary"
@@ -346,11 +467,17 @@ export default function Employees() {
                 Cancel
               </button>
               <button className="btn primary" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <LoaderCircle size={16} className="animate-spin" />
+                ) : (
+                  <UserCheck size={16} />
+                )}{" "}
                 {isSubmitting
                   ? "Saving..."
                   : editing._id
                     ? "Save changes"
                     : "Create account"}
+                {!isSubmitting && <ArrowRight size={15} />}
               </button>
             </div>
           </form>

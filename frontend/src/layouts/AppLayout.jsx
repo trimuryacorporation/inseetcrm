@@ -1,3 +1,4 @@
+import { canAccess, pageModule } from "../utils/permissions";
 import { io } from "socket.io-client";
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -64,105 +65,11 @@ export const navigation = [
       ["Tasks & calendar", "/tasks", CalendarDays],
       ["Documents", "/documents", FolderOpen],
       ["Settings", "/settings", Settings],
+      ["Access & permissions", "/access-control", ShieldCheck],
     ],
   ],
 ];
 
-const views = {
-  Vendor: ["/", "/settings"],
-  Client: ["/", "/settings"],
-  "Finance Manager": [
-    "/",
-    "/finance",
-    "/reports",
-    "/tasks",
-    "/documents",
-    "/communication",
-    "/settings",
-  ],
-  Recruiter: [
-    "/",
-    "/clients",
-    "/jobs",
-    "/candidates",
-    "/pipeline",
-    "/interviews",
-    "/placements",
-    "/tasks",
-    "/communication",
-    "/documents",
-    "/settings",
-  ],
-  "HR Manager": [
-    "/",
-    "/clients",
-    "/jobs",
-    "/candidates",
-    "/pipeline",
-    "/interviews",
-    "/people",
-    "/departments",
-    "/vendors",
-    "/placements",
-    "/reports",
-    "/communication",
-    "/tasks",
-    "/documents",
-    "/settings",
-  ],
-  "Team Leader": [
-    "/",
-    "/clients",
-    "/jobs",
-    "/candidates",
-    "/pipeline",
-    "/interviews",
-    "/people",
-    "/departments",
-    "/placements",
-    "/reports",
-    "/communication",
-    "/tasks",
-    "/documents",
-    "/settings",
-  ],
-  "Sales Manager": [
-    "/",
-    "/clients",
-    "/jobs",
-    "/sales",
-    "/tasks",
-    "/communication",
-    "/documents",
-    "/settings",
-  ],
-  BDE: [
-    "/",
-    "/clients",
-    "/jobs",
-    "/sales",
-    "/tasks",
-    "/communication",
-    "/documents",
-    "/settings",
-  ],
-  "Account Manager": [
-    "/",
-    "/clients",
-    "/jobs",
-    "/candidates",
-    "/pipeline",
-    "/interviews",
-    "/sales",
-    "/vendors",
-    "/placements",
-    "/reports",
-    "/communication",
-    "/tasks",
-    "/documents",
-    "/settings",
-  ],
-};
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false),
     [mobile, setMobile] = useState(false),
@@ -192,6 +99,23 @@ export default function AppLayout() {
     location = useLocation(),
     navigate = useNavigate();
   useEffect(() => {
+    let active = true;
+    const sync = () =>
+      api
+        .get("/auth/me")
+        .then((r) => {
+          if (active) useAuth.setState({ user: r.data });
+        })
+        .catch(() => {});
+    const timer = setInterval(sync, 30000);
+    window.addEventListener("focus", sync);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
+  useEffect(() => {
     if (!mobile) return;
     const handler = (e) => {
       if (e.key === "Escape") setMobile(false);
@@ -211,9 +135,7 @@ export default function AppLayout() {
   const visibleNavigation = navigation
     .map(([group, links]) => [
       group,
-      links.filter(
-        (link) => !views[user.role] || views[user.role].includes(link[1]),
-      ),
+      links.filter((link) => canAccess(user, pageModule(link[1]))),
     ])
     .filter(([, links]) => links.length);
   const current =
@@ -272,7 +194,7 @@ export default function AppLayout() {
           </button>
         </div>
         <nav aria-label="Main navigation">
-          {navigation.map(([group, links]) => (
+          {visibleNavigation.map(([group, links]) => (
             <div className="nav-group" key={group}>
               {!collapsed && <p>{group}</p>}
               {links.map(([label, to, Icon]) => (
@@ -434,7 +356,18 @@ export default function AppLayout() {
           </div>
         </header>
         <main id="main-content" className="content">
-          <Outlet />
+          {canAccess(user, pageModule(location.pathname)) ? (
+            <Outlet />
+          ) : (
+            <section className="panel p-10 text-center">
+              <ShieldCheck className="mx-auto mb-4 text-violet-500" size={36} />
+              <h1>Access restricted</h1>
+              <p className="mt-3 text-slate-500">
+                Your account does not have permission to view this module.
+                Contact your Super Admin.
+              </p>
+            </section>
+          )}
         </main>
         <footer className="app-footer">
           <span>

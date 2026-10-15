@@ -1,9 +1,11 @@
+import {usePermission} from '../utils/permissions';
 ﻿import { useRef, useState } from "react";
 import { Upload, FileSpreadsheet } from "lucide-react";
 import toast from "react-hot-toast";
 import { api, message } from "../services/api";
 import { FormModal } from "./ui";
 export default function DataTools({ resource, onImported }) {
+  const canCreate = usePermission(resource,"create");
   const input = useRef();
   const [busy, setBusy] = useState(false),
     [result, setResult] = useState(null);
@@ -49,7 +51,7 @@ export default function DataTools({ resource, onImported }) {
         <FileSpreadsheet size={16} />
         {busy ? "Working…" : "XLSX"}
       </button>
-      {resource === "candidates" && (
+      {resource === "candidates" && canCreate && (
         <>
           <input
             ref={input}

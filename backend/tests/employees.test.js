@@ -382,3 +382,103 @@ test("employee creation, sign-in and department-based role assignment", async (t
     },
   );
 });
+
+test("employee passwords accept 8+ characters without mandatory uppercase, digits or symbols", async () => {
+  await request(app).get("/api/employees/options").set(headers);
+  const passwords = [
+    "lowercase",
+    "UPPERCASE",
+    "12345678",
+    "p@ssword",
+    " Abc123 ",
+  ];
+  for (let i = 0; i < passwords.length; i++) {
+    const input = { ...body("policy" + i), password: passwords[i] };
+    const created = await request(app)
+      .post("/api/employees")
+      .set(headers)
+      .send(input);
+    assert.equal(created.status, 201, JSON.stringify(created.body));
+    const signedIn = await request(app)
+      .post("/api/auth/login")
+      .send({ email: input.loginId, password: passwords[i] });
+    assert.equal(signedIn.status, 200);
+    if (i === 0)
+      assert.equal(
+        (
+          await request(app).post("/api/auth/login").send({
+            email: input.loginId,
+            password: passwords[i].toUpperCase(),
+          })
+        ).status,
+        401,
+      );
+    if (i === 4)
+      assert.equal(
+        (
+          await request(app)
+            .post("/api/auth/login")
+            .send({ email: input.loginId, password: passwords[i].trim() })
+        ).status,
+        401,
+      );
+  }
+  const invalid = await request(app)
+    .post("/api/employees")
+    .set(headers)
+    .send({ ...body("shortpolicy"), password: "short12" });
+  assert.equal(invalid.status, 400);
+  assert.match(invalid.body.message, /8 characters/);
+  const signIn = await request(app)
+    .post("/api/auth/login")
+    .send({ email: "employee.policy0", password: "lowercase" });
+  const changed = await request(app)
+    .post("/api/auth/change-password")
+    .set({ Authorization: "Bearer " + signIn.body.accessToken })
+    .send({ currentPassword: "lowercase", password: "lowercasenew" });
+  assert.equal(changed.status, 200);
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/auth/login")
+        .send({ email: "employee.policy0", password: "lowercasenew" })
+    ).status,
+    200,
+  );
+});
+
+test("matching work email is accepted as a login ID without ambiguous aliases", async () => {
+  await request(app).get("/api/employees/options").set(headers);
+  const input = {
+    ...body("emailid"),
+    password: "simple123",
+    loginId: "EMPLOYEE-EMAILID@EXAMPLE.TEST",
+  };
+  const created = await request(app)
+    .post("/api/employees")
+    .set(headers)
+    .send(input);
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  assert.equal(created.body.loginId, input.email);
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/auth/login")
+        .send({ email: input.email, password: input.password })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/employees")
+        .set(headers)
+        .send({
+          ...body("wrongemailid"),
+          password: "simple123",
+          loginId: "different@example.test",
+        })
+    ).status,
+    400,
+  );
+});

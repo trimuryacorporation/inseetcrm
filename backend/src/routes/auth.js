@@ -1,3 +1,5 @@
+import { hydratePermissions } from '../services/permissions.js';
+import { passwordSchema as password } from "../validators/password.js";
 import { identityCreate, identityUpdate } from "../services/contactIdentity.js";
 import mongoose from "mongoose";
 import { Bootstrap } from "../models/bootstrap.js";
@@ -11,12 +13,6 @@ import { access, token, hash, safeUser, fail } from "../utils/security.js";
 import { authenticate, allow } from "../middleware/auth.js";
 import { sendLink } from "../services/mail.js";
 export const auth = Router();
-const password = z
-  .string()
-  .min(12)
-  .max(72)
-  .regex(/[A-Z]/, "Include an uppercase letter")
-  .regex(/[0-9]/, "Include a number");
 const credentials = z.object({
   email: z
     .string()
@@ -45,6 +41,7 @@ auth.use(
   }),
 );
 async function issue(user, res) {
+  await hydratePermissions(user);
   const raw = token();
   const session = await Session.create({
     user: user._id,

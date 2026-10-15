@@ -1,3 +1,4 @@
+import { accessControl } from './routes/accessControl.js';
 import { employees } from "./routes/employees.js";
 import { validation } from "./routes/validation.js";
 import { candidateOptions } from "./routes/candidateOptions.js";
@@ -62,6 +63,7 @@ app.get("/api/health", (req, res) =>
   }),
 );
 app.use("/api/auth", auth);
+app.use("/api/access-control", accessControl);
 app.use("/api/employees", employees);
 app.use("/api/validation", validation);
 app.use("/api", recruitment);

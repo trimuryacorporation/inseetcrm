@@ -68,6 +68,7 @@ export const AuditLog = mongoose.model(
       action: String,
       resource: String,
       resourceId: String,
+      changes: mongoose.Schema.Types.Mixed,
     },
     base,
   ),

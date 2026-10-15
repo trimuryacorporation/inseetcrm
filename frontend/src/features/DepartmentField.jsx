@@ -1,7 +1,7 @@
+import { usePermission } from "../utils/permissions";
 import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
-import { Plus } from "lucide-react";
-import { useAuth } from "../store/auth";
+import { Plus, Search, X } from "lucide-react";
 import { api, message } from "../services/api";
 export default function DepartmentField({
   register,
@@ -11,10 +11,7 @@ export default function DepartmentField({
 }) {
   const id = useId(),
     value = watch("department") || "",
-    role = useAuth((s) => s.user?.role),
-    canAdd = ["Super Admin", "Admin", "HR Manager", "Team Leader"].includes(
-      role,
-    );
+    canAdd = usePermission("departments", "create");
   const [query, setQuery] = useState(""),
     [items, setItems] = useState([]),
     [adding, setAdding] = useState(false),
@@ -22,7 +19,9 @@ export default function DepartmentField({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(false),
-    [refresh, setRefresh] = useState(0);
+    [refresh, setRefresh] = useState(0),
+    [searching, setSearching] = useState(false);
+  const registration = register("department");
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
@@ -65,31 +64,74 @@ export default function DepartmentField({
     }
   }
   return (
-    <div className="field">
+    <div className="field department-picker">
       <div className="client-field-heading">
         <label htmlFor={id}>Department{required ? " *" : ""}</label>
-        {canAdd && (
+        <div className="department-picker-actions">
           <button
             type="button"
-            className="client-add-option"
-            onClick={() => setAdding(!adding)}
+            className="department-search-toggle"
+            aria-label="Search departments"
+            aria-expanded={searching}
+            onClick={() => {
+              setSearching(!searching);
+              setQuery("");
+            }}
           >
-            <Plus size={13} />
-            Add department
+            <Search size={14} />
           </button>
-        )}
+          {canAdd && (
+            <button
+              type="button"
+              className="client-add-option"
+              onClick={() => setAdding(!adding)}
+            >
+              <Plus size={13} />
+              Add new
+            </button>
+          )}
+        </div>
       </div>
-      <input
-        aria-label="Search departments"
-        value={query}
-        maxLength={100}
-        placeholder="Search departments..."
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      {searching && (
+        <div className="department-search-input">
+          <Search size={15} aria-hidden="true" />
+          <input
+            aria-label="Search departments"
+            value={query}
+            maxLength={100}
+            placeholder="Search departments..."
+            onChange={(e) => setQuery(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault();
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                setSearching(false);
+                setQuery("");
+              }
+            }}
+          />
+          <button
+            type="button"
+            aria-label="Close department search"
+            onClick={() => {
+              setSearching(false);
+              setQuery("");
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
       <select
         id={id}
         required={required}
-        {...register("department")}
+        {...registration}
+        onChange={(e) => {
+          registration.onChange(e);
+          setSearching(false);
+          setQuery("");
+        }}
         value={value}
         onFocus={() => setRefresh((i) => i + 1)}
       >

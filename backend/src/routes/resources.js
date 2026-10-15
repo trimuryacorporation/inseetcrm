@@ -1,3 +1,4 @@
+import { can } from "../services/permissions.js";
 import { validateDepartment } from "../services/departments.js";
 import { validateClientSelections } from "../services/clientOptions.js";
 import { identityCreate, identityUpdate } from "../services/contactIdentity.js";
@@ -285,17 +286,17 @@ resources.get(
         }),
       ]);
     res.json({
-      totalCandidates,
-      interviewsToday,
-      joinedCandidates,
-      clients,
-      activeClients,
-      jobs,
-      openJobs,
-      vacancies: vacancies[0]?.total || 0,
-      recentJobs,
+      totalCandidates: can(req.user, "candidates") ? totalCandidates : 0,
+      interviewsToday: can(req.user, "interviews") ? interviewsToday : 0,
+      joinedCandidates: can(req.user, "placements") ? joinedCandidates : 0,
+      clients: can(req.user, "clients") ? clients : 0,
+      activeClients: can(req.user, "clients") ? activeClients : 0,
+      jobs: can(req.user, "jobs") ? jobs : 0,
+      openJobs: can(req.user, "jobs") ? openJobs : 0,
+      vacancies: can(req.user, "jobs") ? vacancies[0]?.total || 0 : 0,
+      recentJobs: can(req.user, "jobs") ? recentJobs : [],
       activities,
-      monthly,
+      monthly: can(req.user, "jobs") ? monthly : [],
     });
   },
 );
@@ -361,6 +362,8 @@ resources.patch(
       })
       .strict()
       .parse(req.body);
+    if (data.active === false && !can(req.user, "employees", "delete"))
+      throw fail(403, "You do not have permission to deactivate users");
     if (String(req.user._id) === req.params.id)
       throw fail(400, "You cannot change your own access");
     const target = await User.findById(req.params.id);

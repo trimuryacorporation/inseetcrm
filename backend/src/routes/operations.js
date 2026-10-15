@@ -1,3 +1,4 @@
+import { can } from "../services/permissions.js";
 import {
   ensureStaffDepartments,
   prepareDepartment,
@@ -51,14 +52,18 @@ operations.get("/workspace/modules", (req, res) =>
   res.json(
     Object.fromEntries(
       Object.entries(definitions)
-        .filter(([, d]) => d.read.includes(req.user.role))
+        .filter(([key]) => can(req.user, key, "view"))
         .map(([key, d]) => [
           key,
           {
             title: d.title,
             description: d.description,
             fields: d.fields,
-            canWrite: d.write.includes(req.user.role),
+            canWrite:
+              can(req.user, key, "create") ||
+              can(req.user, key, "edit") ||
+              can(req.user, key, "delete"),
+            permissions: req.user.permissions[key],
           },
         ]),
     ),
@@ -544,9 +549,10 @@ operations.get(
     };
     const records = [];
     for (const [name, Model] of Object.entries(models)) {
+      if (!can(req.user, name.toLowerCase(), "view")) continue;
       records.push({ name, count: await Model.countDocuments(filter) });
     }
-    if (finance.includes(req.user.role)) {
+    if (can(req.user, "finance", "view")) {
       const invoices = await Invoice.aggregate([
         { $match: { createdAt: filter.createdAt } },
         {

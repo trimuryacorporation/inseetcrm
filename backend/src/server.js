@@ -1,3 +1,4 @@
+import { AccessPolicy } from "./services/permissions.js";
 import { ensureClientOptions } from "./services/clientOptions.js";
 import {
   reconcileContactIdentities,
@@ -13,6 +14,7 @@ await mongoose.connect(env.MONGODB_URI, {
   autoIndex: false,
   serverSelectionTimeoutMS: 10000,
 });
+await AccessPolicy.createIndexes();
 await reconcileContactIdentities();
 await ensureContactIndexes();
 await ensureClientOptions();

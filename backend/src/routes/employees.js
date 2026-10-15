@@ -1,3 +1,5 @@
+import { can } from "../services/permissions.js";
+import { passwordSchema as secret } from "../validators/password.js";
 import { Router } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
@@ -36,16 +38,6 @@ const roleOptions = (user) =>
         ? ["Recruiter", "Team Leader", "BDE", "Account Manager"]
         : [];
 const id = z.string().regex(/^[a-f0-9]{24}$/i);
-const secret = z
-  .string()
-  .min(12)
-  .max(72)
-  .regex(/[A-Z]/, "Include an uppercase letter")
-  .regex(/[0-9]/, "Include a number")
-  .refine(
-    (v) => Buffer.byteLength(v, "utf8") <= 72,
-    "Password must be no more than 72 UTF-8 bytes",
-  );
 const schema = z
   .object({
     name: z.string().trim().min(2).max(100),
@@ -58,9 +50,12 @@ const schema = z
       .string()
       .trim()
       .toLowerCase()
-      .regex(
-        /^[a-z0-9][a-z0-9._-]{2,49}$/,
-        "Login ID must be 3-50 letters, digits, dots, underscores or hyphens; do not use @.",
+      .max(254)
+      .refine(
+        (v) =>
+          /^[a-z0-9][a-z0-9._-]{2,49}$/.test(v) ||
+          z.string().email().safeParse(v).success,
+        "Use a 3-50 character username or your matching work email.",
       ),
     phone: z.string().trim().max(30).optional(),
     department: z.string().trim().min(1).max(120),
@@ -145,6 +140,10 @@ employees.get("/", async (req, res) => {
   });
 });
 async function linked(data, current, session) {
+  const loginId = data.loginId ?? current?.loginId;
+  const email = data.email ?? current?.email;
+  if (loginId?.includes("@") && loginId !== email)
+    throw fail(400, "An email-style login ID must match the work email.");
   if (data.department !== undefined)
     data.department = await validateDepartment(
       data.department,
@@ -197,6 +196,8 @@ employees.post("/", allow(...managers), async (req, res) => {
 employees.patch("/:id", allow(...managers), async (req, res) => {
   id.parse(req.params.id);
   let data = schema.partial().parse(req.body);
+  if (data.active === false && !can(req.user, "employees", "delete"))
+    throw fail(403, "You do not have permission to deactivate employees");
   if (req.params.id === String(req.user._id))
     throw fail(400, "Use My profile or Security to update your own account.");
   if (data.password) data.password = await bcrypt.hash(data.password, 12);

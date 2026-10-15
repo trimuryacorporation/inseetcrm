@@ -4,6 +4,7 @@ import { Layers, ArrowLeft, ShieldCheck } from "lucide-react";
 import { useAuth } from "./store/auth";
 import { restore } from "./services/api";
 import AppLayout, { navigation } from "./layouts/AppLayout";
+const AccessControl = lazy(() => import("./pages/AccessControl"));
 const Employees = lazy(() => import("./pages/Employees"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -137,6 +138,7 @@ export default function App() {
             element={<WorkspaceModule key="teams" module="teams" />}
           />
           <Route path="people" element={<Employees />} />
+          <Route path="access-control" element={<AccessControl />} />
           <Route
             path="tasks"
             element={<WorkspaceModule key="tasks" module="tasks" />}

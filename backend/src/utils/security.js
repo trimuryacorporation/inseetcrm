@@ -22,6 +22,7 @@ export const safeUser = (u) => ({
   loginId: u.loginId,
   department: u.department,
   team: u.team,
+  permissions: u.permissions,
 });
 export const fail = (status, message) =>
   Object.assign(new Error(message), { status });

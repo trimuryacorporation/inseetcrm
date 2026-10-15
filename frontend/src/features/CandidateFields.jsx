@@ -1,3 +1,4 @@
+import Permission from "../components/Permission";
 import { useEffect, useId, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { api, message } from "../services/api";
@@ -158,9 +159,11 @@ export function Suggestions({
             !items.some(
               (s) => s.name.toLowerCase() === query.trim().toLowerCase(),
             ) && (
-              <button type="button" onClick={addSkill}>
-                <Plus size={13} /> Add {query.trim()}
-              </button>
+              <Permission module="candidates" action="create">
+                <button type="button" onClick={addSkill}>
+                  <Plus size={13} /> Add {query.trim()}
+                </button>
+              </Permission>
             )}
           {!multiple && provider === "google" && items.length > 0 && (
             <img
@@ -216,14 +219,16 @@ function AddOption({ kind, label, items, value, register, setValue, onAdded }) {
     <div className="field">
       <div className="client-field-heading">
         <label htmlFor={id}>{label}</label>
-        <button
-          type="button"
-          className="client-add-option"
-          onClick={() => setAdding(!adding)}
-        >
-          <Plus size={13} />
-          Add {label.toLowerCase()}
-        </button>
+        <Permission module="candidates" action="create">
+          <button
+            type="button"
+            className="client-add-option"
+            onClick={() => setAdding(!adding)}
+          >
+            <Plus size={13} />
+            Add {label.toLowerCase()}
+          </button>
+        </Permission>
       </div>
       <select id={id} {...register(kind)} value={value || ""}>
         <option value="">Select {label.toLowerCase()}</option>
@@ -251,14 +256,16 @@ function AddOption({ kind, label, items, value, register, setValue, onAdded }) {
             }}
           />
           <div className="client-inline-option-actions">
-            <button
-              type="button"
-              className="btn primary"
-              disabled={busy || name.trim().length < 2}
-              onClick={create}
-            >
-              {busy ? "Saving..." : "Save option"}
-            </button>
+            <Permission module="candidates" action="create">
+              <button
+                type="button"
+                className="btn primary"
+                disabled={busy || name.trim().length < 2}
+                onClick={create}
+              >
+                {busy ? "Saving..." : "Save option"}
+              </button>
+            </Permission>
             <button
               type="button"
               className="btn secondary"

@@ -116,7 +116,7 @@ export default function Settings() {
                   <p>
                     {tab === "profile"
                       ? "Manage how you appear across INSEET."
-                      : "Use at least 12 characters with an uppercase letter and a number."}
+                      : "Use at least 8 characters. Uppercase letters, numbers and symbols are optional."}
                   </p>
                 </div>
               </div>
@@ -161,6 +161,9 @@ export default function Settings() {
                     <Field label="Current password">
                       <input
                         type="password"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
                         required
                         autoComplete="current-password"
                         {...register("currentPassword")}
@@ -169,8 +172,11 @@ export default function Settings() {
                     <Field label="New password">
                       <input
                         type="password"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
                         required
-                        minLength={12}
+                        minLength={8}
                         maxLength={72}
                         autoComplete="new-password"
                         {...register("password")}

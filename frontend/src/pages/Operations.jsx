@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from "react";
+import Permission from "../components/Permission";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   LogIn,
@@ -61,22 +62,26 @@ export function Attendance() {
           </p>
         </div>
         <div className="page-actions">
-          <button
-            className="btn secondary"
-            disabled={busy}
-            onClick={() => action("check-out")}
-          >
-            <LogOut size={16} />
-            Check out
-          </button>
-          <button
-            className="btn primary"
-            disabled={busy}
-            onClick={() => action("check-in")}
-          >
-            <LogIn size={16} />
-            Check in
-          </button>
+          <Permission module="attendance" action="edit">
+            <button
+              className="btn secondary"
+              disabled={busy}
+              onClick={() => action("check-out")}
+            >
+              <LogOut size={16} />
+              Check out
+            </button>
+          </Permission>
+          <Permission module="attendance" action="create">
+            <button
+              className="btn primary"
+              disabled={busy}
+              onClick={() => action("check-in")}
+            >
+              <LogIn size={16} />
+              Check in
+            </button>
+          </Permission>
         </div>
       </div>
       <div className="module-subnav">

@@ -1,3 +1,4 @@
+import { passwordSchema } from "../validators/password.js";
 import { identityCreate, identityUpdate } from "../services/contactIdentity.js";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
@@ -13,7 +14,7 @@ const accountSchema = z
       .email()
       .transform((v) => v.toLowerCase()),
     role: z.enum(["Super Admin", "Admin"]),
-    password: z.string().min(12).max(72).regex(/[A-Z]/).regex(/[0-9]/),
+    password: passwordSchema,
   })
   .strict();
 export async function seedPrivilegedUsers(input) {

@@ -28,6 +28,12 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const config = error.config;
+    if (error.response?.status === 403 && !config.url.startsWith("/auth/")) {
+      api
+        .get("/auth/me")
+        .then((r) => useAuth.setState({ user: r.data }))
+        .catch(() => {});
+    }
     if (
       error.response?.status === 401 &&
       !config._retry &&

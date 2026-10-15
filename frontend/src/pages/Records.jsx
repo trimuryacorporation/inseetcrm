@@ -1,3 +1,5 @@
+import Permission from "../components/Permission";
+import { canAccess } from "../utils/permissions";
 import DepartmentField from "../features/DepartmentField";
 import ClientFields, { fixedFeeToPaise } from "../features/ClientFields";
 import DataTools from "../components/DataTools";
@@ -52,23 +54,20 @@ export default function Records({ type }) {
     title = clients ? "Clients" : "Jobs",
     single = clients ? "client" : "job";
   const user = useAuth((s) => s.user);
-  const canWrite = [
-    "Super Admin",
-    "Admin",
-    "HR Manager",
-    "Team Leader",
-    "Sales Manager",
-    "BDE",
-    "Account Manager",
-    ...(!clients ? ["Recruiter"] : []),
-  ].includes(user.role);
+  const canWrite = ["create", "edit", "delete"].some((action) =>
+    canAccess(user, type, action),
+  );
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get("q") || ""),
     [status, setStatus] = useState(""),
     [page, setPage] = useState(1),
     [data, setData] = useState(null),
     [error, setError] = useState(""),
-    [editing, setEditing] = useState(params.get("create") === "1" ? {} : null),
+    [editing, setEditing] = useState(
+      params.get("create") === "1" && canAccess(user, type, "create")
+        ? {}
+        : null,
+    ),
     [deleting, setDeleting] = useState(null),
     [options, setOptions] = useState([]),
     [busy, setBusy] = useState(false);
@@ -242,10 +241,12 @@ export default function Records({ type }) {
             Export CSV
           </button>
           {canWrite && (
-            <button className="btn primary" onClick={() => setEditing({})}>
-              <Plus size={17} />
-              Add {single}
-            </button>
+            <Permission module={type} action="create">
+              <button className="btn primary" onClick={() => setEditing({})}>
+                <Plus size={17} />
+                Add {single}
+              </button>
+            </Permission>
           )}
         </div>
       </div>
@@ -335,51 +336,57 @@ export default function Records({ type }) {
                       {canWrite && (
                         <td>
                           <div className="flex gap-1">
-                            <button
-                              className="icon-btn"
-                              aria-label={"Edit " + (r.companyName || r.title)}
-                              onClick={() =>
-                                setEditing({
-                                  ...Object.fromEntries(
-                                    (clients ? clientFields : jobFields).map(
-                                      ([k]) => [k, r[k] ?? ""],
+                            <Permission module={type} action="edit">
+                              <button
+                                className="icon-btn"
+                                aria-label={
+                                  "Edit " + (r.companyName || r.title)
+                                }
+                                onClick={() =>
+                                  setEditing({
+                                    ...Object.fromEntries(
+                                      (clients ? clientFields : jobFields).map(
+                                        ([k]) => [k, r[k] ?? ""],
+                                      ),
                                     ),
-                                  ),
-                                  status: r.status,
-                                  ...(clients
-                                    ? {
-                                        feeType: r.feeType || "percentage",
-                                        fixedFeePaise: r.fixedFeePaise,
-                                        fixedFee:
-                                          r.fixedFeePaise == null
-                                            ? ""
-                                            : (r.fixedFeePaise / 100).toFixed(
-                                                2,
-                                              ),
-                                      }
-                                    : {}),
-                                  ...(!clients
-                                    ? {
-                                        client: r.client?._id || r.client,
-                                        priority: r.priority,
-                                        description: r.description || "",
-                                      }
-                                    : {}),
-                                  _id: r._id,
-                                })
-                              }
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              className="icon-btn danger"
-                              aria-label={
-                                "Archive " + (r.companyName || r.title)
-                              }
-                              onClick={() => setDeleting(r)}
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                                    status: r.status,
+                                    ...(clients
+                                      ? {
+                                          feeType: r.feeType || "percentage",
+                                          fixedFeePaise: r.fixedFeePaise,
+                                          fixedFee:
+                                            r.fixedFeePaise == null
+                                              ? ""
+                                              : (r.fixedFeePaise / 100).toFixed(
+                                                  2,
+                                                ),
+                                        }
+                                      : {}),
+                                    ...(!clients
+                                      ? {
+                                          client: r.client?._id || r.client,
+                                          priority: r.priority,
+                                          description: r.description || "",
+                                        }
+                                      : {}),
+                                    _id: r._id,
+                                  })
+                                }
+                              >
+                                <Pencil size={16} />
+                              </button>
+                            </Permission>
+                            <Permission module={type} action="delete">
+                              <button
+                                className="icon-btn danger"
+                                aria-label={
+                                  "Archive " + (r.companyName || r.title)
+                                }
+                                onClick={() => setDeleting(r)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </Permission>
                           </div>
                         </td>
                       )}
@@ -413,10 +420,15 @@ export default function Records({ type }) {
             }
             action={
               canWrite && (
-                <button className="btn primary" onClick={() => setEditing({})}>
-                  <Plus size={16} />
-                  Add {single}
-                </button>
+                <Permission module={type} action="create">
+                  <button
+                    className="btn primary"
+                    onClick={() => setEditing({})}
+                  >
+                    <Plus size={16} />
+                    Add {single}
+                  </button>
+                </Permission>
               )
             }
           />

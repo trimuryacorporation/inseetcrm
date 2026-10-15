@@ -1,4 +1,5 @@
-﻿import { Router } from "express";
+import { can } from "../services/permissions.js";
+import { Router } from "express";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { authenticate, allow } from "../middleware/auth.js";
@@ -49,7 +50,7 @@ clientOptions.get("/client-options", async (req, res) => {
     industries: options.filter((o) => o.kind === "industry"),
     paymentModels: options.filter((o) => o.kind === "paymentModel"),
     states: options.filter((o) => o.kind === "state"),
-    canManage: writers.includes(req.user.role),
+    canManage: can(req.user, "clients", "create"),
   });
 });
 clientOptions.get("/client-options/cities", async (req, res) => {

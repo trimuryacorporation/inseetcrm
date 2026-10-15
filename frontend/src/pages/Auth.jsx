@@ -1,3 +1,4 @@
+import { passwordError } from "../../../shared/passwordPolicy.mjs";
 import { useState } from "react";
 import {
   Link,
@@ -31,12 +32,10 @@ export default function Auth() {
     password: forgot
       ? z.string().optional()
       : setup || reset
-        ? z
-            .string()
-            .min(12, "Use at least 12 characters")
-            .max(72)
-            .regex(/[A-Z]/, "Include an uppercase letter")
-            .regex(/[0-9]/, "Include a number")
+        ? z.string().superRefine((value, ctx) => {
+            const message = passwordError(value);
+            if (message) ctx.addIssue({ code: "custom", message });
+          })
         : z.string().min(1, "Enter your password"),
     name: setup ? z.string().min(2, "Enter your name") : z.string().optional(),
     key: setup
@@ -117,7 +116,7 @@ export default function Auth() {
                 : forgot
                   ? "We’ll email you a secure password reset link."
                   : reset
-                    ? "Use at least 12 characters, an uppercase letter and a number."
+                    ? "Use at least 8 characters. Uppercase letters, numbers and symbols are optional."
                     : ""}
             </p>
           )}
@@ -128,7 +127,13 @@ export default function Auth() {
                   <input autoComplete="name" {...register("name")} />
                 </Field>
                 <Field label="Workspace setup key" error={errors.key}>
-                  <input type="password" {...register("key")} />
+                  <input
+                    type="password"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    {...register("key")}
+                  />
                 </Field>
               </>
             )}
@@ -157,6 +162,9 @@ export default function Auth() {
                 <div className="password-input">
                   <input
                     type={visible ? "text" : "password"}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     autoComplete={
                       reset || setup ? "new-password" : "current-password"
                     }

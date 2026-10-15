@@ -63,7 +63,13 @@ export function SearchInput({
     </div>
   );
 }
-export function FormModal({ title, children, onClose }) {
+export function FormModal({
+  title,
+  children,
+  onClose,
+  className = "",
+  description,
+}) {
   const ref = useRef();
   useEffect(() => {
     const before = document.activeElement;
@@ -73,14 +79,17 @@ export function FormModal({ title, children, onClose }) {
   return createPortal(
     <dialog
       ref={ref}
-      className="modal"
+      className={"modal " + className}
       onCancel={onClose}
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
     >
       <div className="modal-head">
-        <h2>{title}</h2>
+        <div>
+          <h2>{title}</h2>
+          {description && <p className="modal-description">{description}</p>}
+        </div>
         <button
           className="icon-btn"
           aria-label="Close dialog"

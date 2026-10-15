@@ -1,3 +1,4 @@
+import Permission from "../components/Permission";
 import DepartmentField from "../features/DepartmentField";
 import PlacementFields from "../features/PlacementFields";
 import { rupeesToPaise, isPlacementMoney } from "../utils/money";
@@ -235,11 +236,13 @@ export default function WorkspaceModule({ module }) {
             <Download size={16} />
             Export CSV
           </button>
-          {definition.canWrite && (
-            <button className="btn primary" onClick={() => setEditing({})}>
-              <Plus size={16} />
-              {module === "departments" ? "Add department" : "Add record"}
-            </button>
+          {definition && (
+            <Permission module={module} action="create">
+              <button className="btn primary" onClick={() => setEditing({})}>
+                <Plus size={16} />
+                {module === "departments" ? "Add department" : "Add record"}
+              </button>
+            </Permission>
           )}
         </div>
       </div>
@@ -332,22 +335,26 @@ export default function WorkspaceModule({ module }) {
                       )}
                       <td>
                         <div className="flex gap-1">
-                          {definition.canWrite && (
+                          {definition && (
                             <>
-                              <button
-                                className="icon-btn"
-                                aria-label="Edit record"
-                                onClick={() => setEditing(row)}
-                              >
-                                <Pencil size={15} />
-                              </button>
-                              <button
-                                className="icon-btn danger"
-                                aria-label="Archive record"
-                                onClick={() => setDeleting(row)}
-                              >
-                                <Trash2 size={15} />
-                              </button>
+                              <Permission module={module} action="edit">
+                                <button
+                                  className="icon-btn"
+                                  aria-label="Edit record"
+                                  onClick={() => setEditing(row)}
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                              </Permission>
+                              <Permission module={module} action="delete">
+                                <button
+                                  className="icon-btn danger"
+                                  aria-label="Archive record"
+                                  onClick={() => setDeleting(row)}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </Permission>
                             </>
                           )}
                           {module === "leaves" &&
@@ -360,20 +367,24 @@ export default function WorkspaceModule({ module }) {
                             row.approvalStatus === "Pending" &&
                             row.owner !== user.id && (
                               <>
-                                <button
-                                  className="icon-btn"
-                                  aria-label="Approve leave"
-                                  onClick={() => approve(row, "Approved")}
-                                >
-                                  <Check size={16} />
-                                </button>
-                                <button
-                                  className="icon-btn danger"
-                                  aria-label="Reject leave"
-                                  onClick={() => approve(row, "Rejected")}
-                                >
-                                  <X size={16} />
-                                </button>
+                                <Permission module={module} action="edit">
+                                  <button
+                                    className="icon-btn"
+                                    aria-label="Approve leave"
+                                    onClick={() => approve(row, "Approved")}
+                                  >
+                                    <Check size={16} />
+                                  </button>
+                                </Permission>
+                                <Permission module={module} action="edit">
+                                  <button
+                                    className="icon-btn danger"
+                                    aria-label="Reject leave"
+                                    onClick={() => approve(row, "Rejected")}
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </Permission>
                               </>
                             )}
                         </div>
@@ -395,11 +406,16 @@ export default function WorkspaceModule({ module }) {
             title="Make room for your next opportunity"
             description="Add your first record to get this part of your workspace moving."
             action={
-              definition.canWrite && (
-                <button className="btn primary" onClick={() => setEditing({})}>
-                  <Plus size={16} />
-                  {module === "departments" ? "Add department" : "Add record"}
-                </button>
+              definition && (
+                <Permission module={module} action="create">
+                  <button
+                    className="btn primary"
+                    onClick={() => setEditing({})}
+                  >
+                    <Plus size={16} />
+                    {module === "departments" ? "Add department" : "Add record"}
+                  </button>
+                </Permission>
               )
             }
           />

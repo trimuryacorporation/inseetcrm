@@ -1,3 +1,4 @@
+import { can } from "../services/permissions.js";
 import { identityCreate, identityUpdate } from "../services/contactIdentity.js";
 import ExcelJS from "exceljs";
 import { parse } from "csv-parse/sync";
@@ -197,7 +198,7 @@ dataRoutes.get("/data/:resource/export", async (req, res) => {
     fields = definitions[resource].fields.map((f) => f.key);
     read = definitions[resource].read;
   } else throw fail(404, "Export resource not found");
-  if (!read.includes(req.user.role)) throw fail(403, "Export not allowed");
+  if (!can(req.user, resource, "view")) throw fail(403, "Export not allowed");
   const format = z
     .enum(["csv", "xlsx"])
     .default("xlsx")

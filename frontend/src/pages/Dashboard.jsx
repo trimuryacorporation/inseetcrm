@@ -1,3 +1,4 @@
+import Permission from "../components/Permission";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -119,9 +120,11 @@ export default function Dashboard() {
             <CalendarDays size={15} />
             {date}
           </span>
-          <Link to="/jobs?create=1" className="btn primary">
-            <Plus size={17} /> Create job
-          </Link>
+          <Permission module="jobs" action="create">
+            <Link to="/jobs?create=1" className="btn primary">
+              <Plus size={17} /> Create job
+            </Link>
+          </Permission>
         </div>
       </div>
       <div className="welcome-banner">
@@ -136,9 +139,11 @@ export default function Dashboard() {
             forward.
           </p>
         </div>
-        <Link to="/clients" className="banner-link">
-          Manage clients <ArrowRight size={17} />
-        </Link>
+        <Permission module="clients">
+          <Link to="/clients" className="banner-link">
+            Manage clients <ArrowRight size={17} />
+          </Link>
+        </Permission>
         <div className="banner-orb" />
       </div>
       <div className="stat-grid">
@@ -227,9 +232,11 @@ export default function Dashboard() {
               title="Your hiring story starts here"
               description="Create your first job to see recruitment trends."
               action={
-                <Link to="/jobs?create=1" className="text-link">
-                  Create a job <ArrowRight size={15} />
-                </Link>
+                <Permission module="jobs" action="create">
+                  <Link to="/jobs?create=1" className="text-link">
+                    Create a job <ArrowRight size={15} />
+                  </Link>
+                </Permission>
               }
             />
           )}
@@ -276,10 +283,12 @@ export default function Dashboard() {
               %
             </strong>
           </div>
-          <Link to="/jobs" className="panel-bottom-link">
-            Explore your job requirements
-            <ArrowUpRight size={16} />
-          </Link>
+          <Permission module="jobs">
+            <Link to="/jobs" className="panel-bottom-link">
+              Explore your job requirements
+              <ArrowUpRight size={16} />
+            </Link>
+          </Permission>
         </section>
       </div>
       <div className="dashboard-lower">
@@ -292,9 +301,11 @@ export default function Dashboard() {
               </h2>
               <p>The latest opportunities in your workspace</p>
             </div>
-            <Link to="/jobs" className="text-link">
-              View all <ArrowRight size={15} />
-            </Link>
+            <Permission module="jobs">
+              <Link to="/jobs" className="text-link">
+                View all <ArrowRight size={15} />
+              </Link>
+            </Permission>
           </div>
           {data.recentJobs.length ? (
             <div className="table-scroll">
@@ -342,10 +353,12 @@ export default function Dashboard() {
               title="Ready for your first requirement"
               description="Add a client, then create a job to start recruiting."
               action={
-                <Link to="/clients?create=1" className="btn secondary">
-                  <Plus size={16} />
-                  Add a client
-                </Link>
+                <Permission module="clients" action="create">
+                  <Link to="/clients?create=1" className="btn secondary">
+                    <Plus size={16} />
+                    Add a client
+                  </Link>
+                </Permission>
               }
             />
           )}

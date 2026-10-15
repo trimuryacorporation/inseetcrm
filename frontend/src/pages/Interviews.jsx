@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from "react";
+import Permission from "../components/Permission";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Plus,
@@ -119,10 +120,12 @@ export default function Interviews() {
           </h1>
           <p>Schedule conversations and capture feedback in one place.</p>
         </div>
-        <button className="btn primary" onClick={() => setEditing({})}>
-          <Plus size={16} />
-          Schedule interview
-        </button>
+        <Permission module={"interviews"} action="create">
+          <button className="btn primary" onClick={() => setEditing({})}>
+            <Plus size={16} />
+            Schedule interview
+          </button>
+        </Permission>
       </div>
       <div className="panel">
         <div className="panel-heading">
@@ -170,20 +173,24 @@ export default function Interviews() {
                         <StatusBadge>{i.status}</StatusBadge>
                       </td>
                       <td>
-                        <button
-                          className="icon-btn"
-                          aria-label="Edit interview"
-                          onClick={() => setEditing(i)}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          className="icon-btn"
-                          aria-label="Interview feedback"
-                          onClick={() => openFeedback(i)}
-                        >
-                          <MessageSquare size={16} />
-                        </button>
+                        <Permission module={"interviews"} action="edit">
+                          <button
+                            className="icon-btn"
+                            aria-label="Edit interview"
+                            onClick={() => setEditing(i)}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        </Permission>
+                        <Permission module="interviews" action="edit">
+                          <button
+                            className="icon-btn"
+                            aria-label="Interview feedback"
+                            onClick={() => openFeedback(i)}
+                          >
+                            <MessageSquare size={16} />
+                          </button>
+                        </Permission>
                       </td>
                     </tr>
                   ))}
@@ -202,10 +209,12 @@ export default function Interviews() {
             title="Your next great conversation awaits"
             description="Add a candidate to the pipeline, then schedule an interview."
             action={
-              <button className="btn primary" onClick={() => setEditing({})}>
-                <Plus size={16} />
-                Schedule interview
-              </button>
+              <Permission module={"interviews"} action="create">
+                <button className="btn primary" onClick={() => setEditing({})}>
+                  <Plus size={16} />
+                  Schedule interview
+                </button>
+              </Permission>
             }
           />
         )}
