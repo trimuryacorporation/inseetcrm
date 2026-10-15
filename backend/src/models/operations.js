@@ -24,6 +24,17 @@ const f = (key, label, type = "text", required = false, options) => ({
   ...(options ? { options } : {}),
 });
 export const definitions = {
+  departments: {
+    name: "Department",
+    title: "Departments",
+    description: "Manage departments shared by your teams and jobs.",
+    read: staff,
+    write: hr,
+    fields: [
+      f("name", "Department name", "text", true),
+      f("description", "Description", "textarea"),
+    ],
+  },
   teams: {
     name: "Team",
     title: "People & teams",
@@ -273,6 +284,7 @@ for (const [key, def] of Object.entries(definitions)) {
     };
     fields.approvedBy = { type: Schema.Types.ObjectId, ref: "User" };
   }
+  if (key === "departments") fields.nameKey = { type: String, required: true };
   if (key === "placements") {
     fields.candidate = { type: Schema.Types.ObjectId, ref: "Candidate" };
     fields.client = { type: Schema.Types.ObjectId, ref: "Client" };
@@ -287,6 +299,7 @@ for (const [key, def] of Object.entries(definitions)) {
     fields.commissionBasisPoints.validate = Number.isInteger;
   }
   const schema = new Schema(fields, { timestamps: true });
+  if (key === "departments") schema.index({ nameKey: 1 }, { unique: true });
   schema.plugin(contactPolicy);
   schema.index({ owner: 1, createdAt: -1 });
   Models[key] = mongoose.model(def.name, schema);

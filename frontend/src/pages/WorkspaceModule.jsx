@@ -1,3 +1,4 @@
+import DepartmentField from "../features/DepartmentField";
 import PlacementFields from "../features/PlacementFields";
 import { rupeesToPaise, isPlacementMoney } from "../utils/money";
 import GstinField from "../features/GstinField";
@@ -237,7 +238,7 @@ export default function WorkspaceModule({ module }) {
           {definition.canWrite && (
             <button className="btn primary" onClick={() => setEditing({})}>
               <Plus size={16} />
-              Add record
+              {module === "departments" ? "Add department" : "Add record"}
             </button>
           )}
         </div>
@@ -255,9 +256,10 @@ export default function WorkspaceModule({ module }) {
             <a href="/offers">Offers</a>
           </>
         )}
-        {module === "teams" && (
+        {["teams", "departments"].includes(module) && (
           <>
             <a href="/people">Teams</a>
+            <a href="/departments">Departments</a>
             <a href="/attendance">Attendance</a>
             <a href="/leaves">Leave requests</a>
             <a href="/branches">Branches</a>
@@ -395,7 +397,7 @@ export default function WorkspaceModule({ module }) {
               definition.canWrite && (
                 <button className="btn primary" onClick={() => setEditing({})}>
                   <Plus size={16} />
-                  Add record
+                  {module === "departments" ? "Add department" : "Add record"}
                 </button>
               )
             }
@@ -404,7 +406,15 @@ export default function WorkspaceModule({ module }) {
       </section>
       {editing && (
         <FormModal
-          title={editing._id ? "Edit record" : "Add record"}
+          title={
+            module === "departments"
+              ? editing._id
+                ? "Edit department"
+                : "Add department"
+              : editing._id
+                ? "Edit record"
+                : "Add record"
+          }
           onClose={() => setEditing(null)}
         >
           <form onSubmit={handleSubmit(save)}>
@@ -426,7 +436,14 @@ export default function WorkspaceModule({ module }) {
                     ),
                 )
                 .map((f) =>
-                  f.key === "gstin" ? (
+                  f.key === "department" ? (
+                    <DepartmentField
+                      key={f.key}
+                      register={register}
+                      watch={watch}
+                      setValue={setValue}
+                    />
+                  ) : f.key === "gstin" ? (
                     <GstinField
                       key={f.key}
                       register={register}
@@ -492,7 +509,11 @@ export default function WorkspaceModule({ module }) {
                 Cancel
               </button>
               <button className="btn primary" disabled={isSubmitting}>
-                {isSubmitting ? "Saving…" : "Save record"}
+                {isSubmitting
+                  ? "Saving..."
+                  : module === "departments"
+                    ? "Save department"
+                    : "Save record"}
                 <ArrowRight size={16} />
               </button>
             </div>

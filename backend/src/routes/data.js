@@ -202,7 +202,10 @@ dataRoutes.get("/data/:resource/export", async (req, res) => {
     .enum(["csv", "xlsx"])
     .default("xlsx")
     .parse(req.query.format);
-  const rows = await Model.find({ deletedAt: null, ...scope(req.user) })
+  const rows = await Model.find({
+    deletedAt: null,
+    ...(resource === "departments" ? {} : scope(req.user)),
+  })
     .sort({ createdAt: -1 })
     .limit(10000)
     .lean();

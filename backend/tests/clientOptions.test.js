@@ -395,3 +395,153 @@ test("shared GST validation, vendor percentage and city search", async () => {
     200,
   );
 });
+
+test("shared departments persist, validate team selections and protect assignments", async () => {
+  const user = await User.findOne({ email: "options-admin@example.test" });
+  assert.equal((await request(app).get("/api/departments")).status, 401);
+  const created = await request(app)
+    .post("/api/departments")
+    .set(headers)
+    .send({
+      name: "  Talent   Operations ",
+      description: "Recruitment department",
+    });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  assert.equal(created.body.name, "Talent Operations");
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/departments")
+        .set(headers)
+        .send({ name: "talent operations" })
+    ).status,
+    409,
+  );
+  const manager = await User.create({
+    name: "Department HR",
+    email: "department-hr@example.test",
+    role: "HR Manager",
+  });
+  const managerHeaders = { Authorization: "Bearer " + access(manager) };
+  const list = await request(app)
+    .get("/api/departments?q=Talent")
+    .set(managerHeaders);
+  assert.equal(list.status, 200);
+  assert.ok(list.body.items.some((i) => i._id === created.body._id));
+  assert.equal(
+    (
+      await request(app)
+        .patch("/api/departments/" + created.body._id)
+        .set(managerHeaders)
+        .send({ description: "Updated shared department" })
+    ).status,
+    200,
+  );
+  const recruiter = await User.create({
+    name: "Department Recruiter",
+    email: "department-recruiter@example.test",
+    role: "Recruiter",
+  });
+  const recruiterHeaders = { Authorization: "Bearer " + access(recruiter) };
+  assert.equal(
+    (await request(app).get("/api/departments").set(recruiterHeaders)).status,
+    200,
+  );
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/departments")
+        .set(recruiterHeaders)
+        .send({ name: "Blocked Department" })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/teams")
+        .set(headers)
+        .send({ name: "Invalid Team", department: "Missing Department" })
+    ).status,
+    400,
+  );
+  const team = await request(app)
+    .post("/api/teams")
+    .set(headers)
+    .send({ name: "Recruitment Team", department: "talent operations" });
+  assert.equal(team.status, 201, JSON.stringify(team.body));
+  assert.equal(team.body.department, "Talent Operations");
+  assert.equal(
+    (
+      await request(app)
+        .delete("/api/departments/" + created.body._id)
+        .set(headers)
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await request(app)
+        .patch("/api/departments/" + created.body._id)
+        .set(headers)
+        .send({ name: "Renamed Department" })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await request(app)
+        .delete("/api/teams/" + team.body._id)
+        .set(headers)
+    ).status,
+    204,
+  );
+  const client = await mongoose.models.Client.create({
+    companyName: "Department Test Client",
+    owner: user._id,
+  });
+  const job = await mongoose.models.Job.create({
+    title: "Department Test Job",
+    client: client._id,
+    owner: user._id,
+    department: "Talent Operations",
+  });
+  assert.equal(
+    (
+      await request(app)
+        .delete("/api/departments/" + created.body._id)
+        .set(headers)
+    ).status,
+    409,
+  );
+  const invalidJob = await request(app)
+    .patch("/api/jobs/" + job._id)
+    .set(headers)
+    .send({ department: "Missing Department" });
+  assert.equal(invalidJob.status, 400);
+  await mongoose.models.Job.updateOne(
+    { _id: job._id },
+    { $set: { deletedAt: new Date() } },
+  );
+  assert.equal(
+    (
+      await request(app)
+        .delete("/api/departments/" + created.body._id)
+        .set(managerHeaders)
+    ).status,
+    204,
+  );
+  const remaining = await request(app)
+    .get("/api/departments?q=Talent")
+    .set(headers);
+  assert.ok(!remaining.body.items.some((i) => i._id === created.body._id));
+  assert.equal(
+    (
+      await request(app)
+        .post("/api/teams")
+        .set(headers)
+        .send({ name: "Archived Team", department: "Talent Operations" })
+    ).status,
+    400,
+  );
+});

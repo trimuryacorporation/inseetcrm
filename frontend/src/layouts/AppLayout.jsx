@@ -49,6 +49,7 @@ export const navigation = [
     "Business",
     [
       ["People & teams", "/people", UserRoundCog],
+      ["Departments", "/departments", Building2],
       ["Sales CRM", "/sales", TrendingUp],
       ["Vendors", "/vendors", Handshake],
       ["Placements", "/placements", ClipboardCheck],
@@ -100,6 +101,7 @@ const views = {
     "/pipeline",
     "/interviews",
     "/people",
+    "/departments",
     "/vendors",
     "/placements",
     "/reports",
@@ -116,6 +118,7 @@ const views = {
     "/pipeline",
     "/interviews",
     "/people",
+    "/departments",
     "/placements",
     "/reports",
     "/communication",

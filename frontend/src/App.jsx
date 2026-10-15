@@ -128,6 +128,10 @@ export default function App() {
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="interviews" element={<Interviews />} />
           <Route
+            path="departments"
+            element={<WorkspaceModule key="departments" module="departments" />}
+          />
+          <Route
             path="people"
             element={<WorkspaceModule key="teams" module="teams" />}
           />

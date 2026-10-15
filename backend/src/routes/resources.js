@@ -1,3 +1,4 @@
+import { validateDepartment } from "../services/departments.js";
 import { validateClientSelections } from "../services/clientOptions.js";
 import { identityCreate, identityUpdate } from "../services/contactIdentity.js";
 import { Candidate, Interview } from "../models/recruitment.js";
@@ -132,6 +133,8 @@ for (const [name, Model, schema, fields] of [
       if (count !== new Set(data.assignedRecruiters).size)
         throw fail(400, "Invalid recruiter assignment");
     }
+    if (name === "jobs" && data.department !== undefined)
+      data.department = await validateDepartment(data.department);
     const item = await identityCreate(Model, { ...data, owner: req.user._id });
     await AuditLog.create({
       actor: req.user._id,
@@ -168,6 +171,18 @@ for (const [name, Model, schema, fields] of [
       }))
     )
       throw fail(400, "Choose an accessible client");
+    if (name === "jobs" && data.department !== undefined) {
+      const current = await Job.findOne({
+        _id: req.params.id,
+        deletedAt: null,
+        ...jobScope(req.user),
+      });
+      if (!current) throw fail(404, "Record not found");
+      data.department = await validateDepartment(
+        data.department,
+        current.department,
+      );
+    }
     const item = await identityUpdate(
       Model,
       { _id: req.params.id, deletedAt: null, ...scope(req.user) },

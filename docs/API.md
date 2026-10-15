@@ -112,3 +112,8 @@ Staff-only POST /validation/gstin {gstin} checks GSTIN format and checksum; it d
 ## Placement links and joining amounts
 
 GET /placements/options?kind=candidates|clients|jobs&q=&client= returns up to 25 authorized, non-archived records. Jobs require a client ID and are filtered to that company. Recruiters see their candidates and assigned jobs; related client names are available for those jobs. New placements require candidate, client and job IDs, joiningSalaryPaise (integer), salaryPeriod (Monthly|Annual), joiningDate and status. Canonical names are read from MongoDB and saved as historical snapshots. Invalid or unauthorized links and mismatched job/client selections are rejected. Existing legacy records are retained; relink them through the form to use current selections. Placement amounts display and export in INR, while the REST API and MongoDB retain integer paise for precision.
+
+
+## Shared department catalog
+
+GET /departments supports search and pagination for staff. Super Admin, Admin, HR Manager and Team Leader can POST /departments {name, description}, PATCH /departments/:id, and DELETE /departments/:id. Departments are shared across record owners and names are unique after whitespace/case normalization. Team and job forms fetch this catalog and offer an inline add option to authorized users; /departments provides separate management. New department selections must reference a saved non-archived name. Unchanged historical department values remain editable. Rename and archive return 409 while an active team or job uses the department. Archived names stay reserved for audit history.

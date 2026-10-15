@@ -1,3 +1,4 @@
+import DepartmentField from "../features/DepartmentField";
 import ClientFields, { fixedFeeToPaise } from "../features/ClientFields";
 import DataTools from "../components/DataTools";
 import { useEffect, useState } from "react";
@@ -448,27 +449,36 @@ export default function Records({ type }) {
                 />
               ) : (
                 <>
-                  {jobFields.map(([key, label, required]) => (
-                    <Field key={key} label={label + (required ? " *" : "")}>
-                      <input
-                        required={required}
-                        maxLength={300}
-                        type={
-                          key === "email"
-                            ? "email"
-                            : key === "website"
-                              ? "url"
-                              : ["openings", "placementFee"].includes(key)
-                                ? "number"
-                                : "text"
-                        }
-                        min={key === "openings" ? 1 : 0}
-                        step={key === "placementFee" ? "0.01" : undefined}
-                        defaultValue={key === "openings" ? 1 : undefined}
-                        {...register(key)}
+                  {jobFields.map(([key, label, required]) =>
+                    key === "department" ? (
+                      <DepartmentField
+                        key={key}
+                        register={register}
+                        watch={watch}
+                        setValue={setValue}
                       />
-                    </Field>
-                  ))}
+                    ) : (
+                      <Field key={key} label={label + (required ? " *" : "")}>
+                        <input
+                          required={required}
+                          maxLength={300}
+                          type={
+                            key === "email"
+                              ? "email"
+                              : key === "website"
+                                ? "url"
+                                : ["openings", "placementFee"].includes(key)
+                                  ? "number"
+                                  : "text"
+                          }
+                          min={key === "openings" ? 1 : 0}
+                          step={key === "placementFee" ? "0.01" : undefined}
+                          defaultValue={key === "openings" ? 1 : undefined}
+                          {...register(key)}
+                        />
+                      </Field>
+                    ),
+                  )}
                 </>
               )}
               <Field label="Status">

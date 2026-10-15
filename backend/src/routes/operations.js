@@ -1,4 +1,9 @@
 import {
+  prepareDepartment,
+  validateDepartment,
+  guardDepartmentChange,
+} from "../services/departments.js";
+import {
   placementClientScope,
   resolvePlacementLinks,
 } from "../services/placementLinks.js";
@@ -160,7 +165,9 @@ for (const [key, def] of Object.entries(definitions)) {
       .parse(req.query);
     const filter = {
       deletedAt: null,
-      ...(key === "email-templates" ? {} : scope(req.user)),
+      ...(["email-templates", "departments"].includes(key)
+        ? {}
+        : scope(req.user)),
     };
     if (q)
       filter.$or = def.fields
@@ -180,6 +187,13 @@ for (const [key, def] of Object.entries(definitions)) {
     if (key === "leaves" && data.endDate < data.startDate)
       throw fail(400, "End date must be on or after start date");
     const result = await mongoose.connection.transaction(async (session) => {
+      if (key === "departments") data = prepareDepartment(data);
+      if (key === "teams" && data.department !== undefined)
+        data.department = await validateDepartment(
+          data.department,
+          undefined,
+          session,
+        );
       if (key === "placements")
         data = await resolvePlacementLinks(data, req.user, session);
       const [item] = await identityCreate(
@@ -214,9 +228,20 @@ for (const [key, def] of Object.entries(definitions)) {
         const current = await Model.findOne({
           _id: req.params.id,
           deletedAt: null,
-          ...scope(req.user),
+          ...(key === "departments" ? {} : scope(req.user)),
         }).session(session);
         if (!current) throw fail(404, "Record not found");
+        if (key === "departments") {
+          data = prepareDepartment(data);
+          if (data.name !== undefined)
+            await guardDepartmentChange(current, data.name, session);
+        }
+        if (key === "teams" && data.department !== undefined)
+          data.department = await validateDepartment(
+            data.department,
+            current.department,
+            session,
+          );
         if (key === "leaves") {
           if (current.approvalStatus !== "Pending")
             throw fail(
@@ -258,9 +283,21 @@ for (const [key, def] of Object.entries(definitions)) {
     async (req, res) => {
       id.parse(req.params.id);
       await mongoose.connection.transaction(async (session) => {
+        if (key === "departments") {
+          const current = await Model.findOne({
+            _id: req.params.id,
+            deletedAt: null,
+          }).session(session);
+          if (!current) throw fail(404, "Record not found");
+          await guardDepartmentChange(current, undefined, session);
+        }
         const item = await identityUpdate(
           Model,
-          { _id: req.params.id, deletedAt: null, ...scope(req.user) },
+          {
+            _id: req.params.id,
+            deletedAt: null,
+            ...(key === "departments" ? {} : scope(req.user)),
+          },
           { $set: { deletedAt: new Date() } },
           { returnDocument: "after", session },
         );
