@@ -76,3 +76,10 @@ References: https://github.com/rolldown/rolldown/blob/main/docs/guide/troublesho
 The Render service hosts the Express API; the CRM login UI is hosted on Vercel. GET / and GET /api return public API information and the configured frontend URL. GET /api/health is the database readiness endpoint; it returns 503 if MongoDB is disconnected. Unknown routes still return 404.
 
 For this Render service configure Vercel VITE_API_URL=https://inseetcrm.onrender.com/api, then redeploy the frontend. A bare origin is normalized to include /api by the Axios client. Set Render FRONTEND_URL to the exact Vercel frontend origin for CORS and authentication callbacks, then redeploy the backend. Push these code changes before redeploying: changing environment variables alone does not install a missing root route.
+
+
+## Login refresh returning 405 on incrm.inseet.in
+
+frontend/vercel.json forwards /api/:path* to https://inseetcrm.onrender.com/api/:path* before the SPA catch-all rewrite. This prevents POST /api/auth/refresh and login requests from reaching the static index.html handler. The default Axios /api URL works through this proxy, so no VITE_API_URL is required for this Vercel deployment. Remove an incorrect or localhost VITE_API_URL override; set it to /api for same-origin proxy requests. Redeploy Vercel after changing source or Vite environment variables.
+
+Set Render FRONTEND_URL=https://incrm.inseet.in (exact origin, no trailing slash) and redeploy Render so refresh/logout Origin checks and CORS accept the deployed frontend. Never disable these checks to solve 405. With no session cookie a correctly routed refresh normally returns 401; it should not return Vercel 405. This change requires deployment before it affects the live domain.

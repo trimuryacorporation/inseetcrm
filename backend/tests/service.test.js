@@ -41,3 +41,20 @@ test("API origin URLs gain the required prefix without duplicating it", () => {
     "https://example.test/v1/api",
   );
 });
+
+test("Vercel forwards API requests before serving the SPA", async () => {
+  const fs = await import("node:fs/promises");
+  const config = JSON.parse(
+    await fs.readFile(
+      new URL("../../frontend/vercel.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const first = config.rewrites[0];
+  assert.equal(first.source, "/api/:path*");
+  assert.equal(first.destination, "https://inseetcrm.onrender.com/api/:path*");
+  assert.equal(
+    config.rewrites[config.rewrites.length - 1].destination,
+    "/index.html",
+  );
+});
