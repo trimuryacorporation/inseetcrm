@@ -1,0 +1,20 @@
+﻿services:
+  - type: web
+    name: inseet-api
+    runtime: node
+    buildCommand: npm ci --omit=dev --workspace backend
+    startCommand: npm start --workspace backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: SETUP_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false

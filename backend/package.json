@@ -1,0 +1,38 @@
+{
+  "name": "@inseet/backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "seed": "node src/jobs/seed.js",
+    "migrate:contacts": "node src/jobs/migrate-contact-identities.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
+    "@aws-sdk/s3-request-presigner": "^3.1152.0",
+    "bcrypt": "latest",
+    "cookie-parser": "latest",
+    "cors": "latest",
+    "country-state-city": "^3.2.1",
+    "csv-parse": "^7.0.3",
+    "dotenv": "latest",
+    "exceljs": "^4.4.0",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "jsonwebtoken": "latest",
+    "mongoose": "latest",
+    "multer": "^2.4.0",
+    "nodemailer": "latest",
+    "pino": "latest",
+    "pino-http": "latest",
+    "socket.io": "^4.8.4",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "mongodb-memory-server": "latest",
+    "supertest": "latest"
+  }
+}

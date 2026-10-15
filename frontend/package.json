@@ -1,0 +1,30 @@
+{
+  "name": "@inseet/frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "latest",
+    "axios": "latest",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-hook-form": "latest",
+    "react-hot-toast": "latest",
+    "react-router-dom": "latest",
+    "recharts": "latest",
+    "socket.io-client": "^4.8.4",
+    "zod": "latest",
+    "zustand": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "latest",
+    "@vitejs/plugin-react": "latest",
+    "tailwindcss": "latest",
+    "vite": "latest"
+  }
+}

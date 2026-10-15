@@ -1,0 +1,21 @@
+{
+  "name": "inseet-enterprise",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "build": "npm run build -w frontend",
+    "test": "npm test -w backend",
+    "format": "prettier --write \"frontend/src/**/*.{js,jsx,css}\" \"backend/{src,tests}/**/*.js\" \"*.{json,yaml,md}\" \"docs/**/*.md\""
+  },
+  "devDependencies": {
+    "concurrently": "latest",
+    "prettier": "^3.9.10"
+  },
+  "engines": {
+    "node": ">=24.14.0"
+  }
+}
